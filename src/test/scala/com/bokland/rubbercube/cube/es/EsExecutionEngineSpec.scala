@@ -1,13 +1,14 @@
 package com.bokland.rubbercube.cube.es
 
 import org.scalatest.{BeforeAndAfterAll, ShouldMatchers, WordSpec}
-import com.bokland.rubbercube.cube.{RequestResult, Cube, ExecutionEngine}
+import com.bokland.rubbercube.cube.{RequestResult, Cube}
 import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import com.bokland.rubbercube.{DateAggregationType, DateAggregation, Dimension}
 import com.bokland.rubbercube.kpi.MobileKpi
 import MobileKpi.UniquePayersCount
+import com.bokland.rubbercube.filter.Filter._
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -27,23 +28,45 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     engine = new EsExecutionEngine(client, "rubbercube")
   }
 
-  "Successfully return daily unique payers count" in {
-    val cube = Cube("purchase",
-      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
-      Seq(UniquePayersCount(Dimension("_parent"))), Nil
-    )
+  "Daily unique payers count" should {
+    "be calculated with no filter" in {
+      val cube = Cube("purchase",
+        Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+        Seq(UniquePayersCount(Dimension("_parent"))))
 
-    val request = engine.buildRequest(cube)
-    println("Daily paying users request: " + request)
-
-    val result = engine.execute(cube)
-    println("Result: " + result)
-
-    result should be (
-      RequestResult(List("date", "uniquepayerscount"),
-        List(List("2014-01-01T00:00:00.000Z", 2), List("2014-01-02T00:00:00.000Z", 1),
-          List("2014-01-03T00:00:00.000Z", 1)))
+      engine.execute(cube) should be(
+        RequestResult(List("date", "uniquepayerscount"),
+          List(List("2014-01-01T00:00:00.000Z", 2), List("2014-01-02T00:00:00.000Z", 1),
+            List("2014-01-03T00:00:00.000Z", 1)))
       )
+    }
+
+    "be calculated with filter, applied to purchase" in {
+      val cube = Cube("purchase",
+        Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+        Seq(UniquePayersCount(Dimension("_parent"))),
+        Seq(eql(Dimension("country"), "US"), eql(Dimension("gender"), "Female"))
+      )
+
+      engine.execute(cube) should be(
+        RequestResult(List("date", "uniquepayerscount"),
+          List(List("2014-01-01T00:00:00.000Z", 1), List("2014-01-02T00:00:00.000Z", 1)))
+      )
+    }
+
+    "be calculated with filter, applied to parent document" in {
+      val cube = Cube("purchase",
+        Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+        Seq(UniquePayersCount(Dimension("_parent"))),
+        Seq(eql(Dimension("country"), "US"), eql(Dimension("source", cubeId = Some("user")), "Organic")),
+        parentId = Some("user")
+      )
+
+      engine.execute(cube) should be(
+        RequestResult(List("date", "uniquepayerscount"),
+          List(List("2014-01-01T00:00:00.000Z", 1), List("2014-01-02T00:00:00.000Z", 1)))
+      )
+    }
   }
 
 }

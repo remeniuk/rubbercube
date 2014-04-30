@@ -9,6 +9,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
 import scala.collection.JavaConversions._
 import org.elasticsearch.search.aggregations.Aggregation
 import org.elasticsearch.search.aggregations.metrics.cardinality.InternalCardinality
+import org.elasticsearch.index.query.QueryBuilders._
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -24,8 +25,28 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
       kpi => search.addAggregation(EsAggregationQueryBuilder.buildAggregationQuery(kpi, aggregations))
     }
 
-    filters.foreach {
-      filter => search.setQuery(EsFilterMarshaller.marshal(filter))
+    if (filters.size > 0) {
+
+      val query = boolQuery()
+
+      val parentFilters = for {
+        parentCubeId <- cube.parentId.toIterable
+        filter <- filters
+        filterCubeId <- filter.dimension.cubeId if filterCubeId == parentCubeId
+      } yield filter
+
+      filters.toList.diff(parentFilters.toList).foreach {
+        filter => query.must(EsFilterMarshaller.marshal(filter))
+      }
+
+      parentFilters.foreach {
+        filter =>
+          query.must(hasParentQuery(filter.dimension.cubeId.get,
+            EsFilterMarshaller.marshal(filter)))
+      }
+
+      search.setQuery(query)
+
     }
 
     search
@@ -62,7 +83,7 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
 
     val resultSet = result.getAggregations.map(buildResultSet(_, Nil, Nil)).flatten.toSeq
 
-    RequestResult(Seq(aggregationNames.distinct:_*), resultSet)
+    RequestResult(Seq(aggregationNames.distinct: _*), resultSet)
   }
 
 }
