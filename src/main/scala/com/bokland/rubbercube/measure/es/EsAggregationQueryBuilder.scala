@@ -7,7 +7,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders._
 import com.bokland.rubbercube.Dimension
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
 import com.bokland.rubbercube.DateAggregationType.DateAggregationType
-import com.bokland.rubbercube.measure.Measures.CountDistinct
+import com.bokland.rubbercube.measure.Measures.{Avg, Sum, Count, CountDistinct}
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -16,13 +16,21 @@ import com.bokland.rubbercube.measure.Measures.CountDistinct
 object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggregationBuilder] {
 
   def buildAggregationQuery(measure: Measure, aggregations: Map[Dimension, AggregationType]) = {
-    val aggregationQuery = buildQueryCore(aggregations)
+    val (aggregationQuery, lowestAggregation) = buildQueryCore(aggregations)
 
     measure match {
 
       case CountDistinct(userDimension) =>
-        val query = cardinality(measure.name).field(userDimension.fqn)
-        addSubAggregation(aggregationQuery, query)
+        addSubAggregation(lowestAggregation, cardinality(measure.name).field(userDimension.fqn))
+
+      case Count(userDimension) =>
+        addSubAggregation(lowestAggregation, count(measure.name).field(userDimension.fqn))
+
+      case Sum(userDimension) =>
+        addSubAggregation(lowestAggregation, sum(measure.name).field(userDimension.fqn))
+
+      case Avg(userDimension) =>
+        addSubAggregation(lowestAggregation, avg(measure.name).field(userDimension.fqn))
 
     }
 
@@ -58,17 +66,21 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
     subAgg
   }
 
-  private def buildQueryCore(aggregations: Map[Dimension, AggregationType]): AbstractAggregationBuilder = {
+  private def buildQueryCore(aggregations: Map[Dimension, AggregationType]):
+  (AbstractAggregationBuilder, AbstractAggregationBuilder) = {
     val aggregation: AbstractAggregationBuilder = buildAggregationQuery(aggregations.head)
+    var subAgg: AbstractAggregationBuilder = null
 
     if (aggregations.size > 1) (aggregation /: aggregations.tail) {
       (aggs, agg) =>
-        val subAgg = buildAggregationQuery(agg)
+        subAgg = buildAggregationQuery(agg)
         addSubAggregation(aggs, subAgg)
         subAgg
+    } else {
+      subAgg = aggregation
     }
 
-    aggregation
+    (aggregation, subAgg)
   }
 
 }

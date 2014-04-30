@@ -11,7 +11,11 @@ import org.elasticsearch.search.aggregations.Aggregation
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.metrics.sum.Sum
+import org.elasticsearch.search.aggregations.metrics.avg.Avg
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount
+import com.bokland.rubbercube.measure.{DerivedMeasure, Measure}
+import EsAggregationQueryBuilder._
+import com.bokland.rubbercube.measure.DerivedMeasures.Div
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -24,7 +28,14 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
     val search = client.prepareSearch(index).setTypes(cube.id).setSize(0)
 
     measures.foreach {
-      measure => search.addAggregation(EsAggregationQueryBuilder.buildAggregationQuery(measure, aggregations))
+      case derivedMeasure: DerivedMeasure =>
+        derivedMeasure.measures.map {
+          measure =>
+            search.addAggregation(buildAggregationQuery(measure, aggregations))
+        }
+
+      case measure: Measure =>
+        search.addAggregation(buildAggregationQuery(measure, aggregations))
     }
 
     if (filters.size > 0) {
@@ -54,33 +65,73 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
     search
   }
 
+  private def parseCategoryAggregationResult(aggregation: Aggregation): (String, Any) =
+    aggregation match {
+      case cardinality: Cardinality => aggregation.getName -> cardinality.getValue
+      case sum: Sum => aggregation.getName -> sum.getValue
+      case avg: Avg => aggregation.getName -> avg.getValue
+      case count: ValueCount => aggregation.getName -> count.getValue
+    }
+
   def runQuery(query: SearchRequestBuilder): RequestResult = {
     val result = query.execute().get()
 
-    def buildResultSet(aggregation: Aggregation, tuple: Map[String, Any] = Map(),
-                       resultSet: Seq[Map[String, Any]] = Nil): Seq[Map[String, Any]] = {
+    var rs: Set[Map[String, Any]] = Set()
+
+    // processes bucket aggregations
+    def parseResults(aggregation: Aggregation, tuple: Map[String, Any] = Map()): Any = {
 
       aggregation match {
 
         case dateHistogram: DateHistogram =>
-          dateHistogram.getBuckets.map {
+
+          dateHistogram.getBuckets.foreach {
             bucket =>
-                bucket.getAggregations.map(buildResultSet(_, tuple + (aggregation.getName -> bucket.getKey), resultSet))
-                  .flatten.toSeq
-          }.flatten.toSeq
-
-        case cardinality: Cardinality => resultSet :+ (tuple + (aggregation.getName -> cardinality.getValue))
-
-        case sum: Sum => resultSet :+ (tuple + (aggregation.getName -> sum.getValue))
-
-        case count: ValueCount => resultSet :+ (tuple + (aggregation.getName -> count.getValue))
+            // if child aggregation is bucket aggregation, drill down
+              if (bucket.getAggregations.forall(a => a.isInstanceOf[DateHistogram])) {
+                bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
+              } else {
+                // if child aggregation is category aggregation, build tuple and add it to result
+                rs = rs + ((tuple + (aggregation.getName -> bucket.getKey)) ++
+                  bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
+              }
+          }
 
       }
     }
 
-    val resultSet = result.getAggregations.map(buildResultSet(_)).flatten.toSeq
+    val resultSet = if (result.getAggregations.size == 1) {
+      parseResults(result.getAggregations.head)
+      rs.toSeq
+    } else {
+      // may only happen, if category aggregations are upper level, and there're no
+      // bucket aggregations
+      Seq(result.getAggregations.map(parseCategoryAggregationResult).toMap)
+    }
 
     RequestResult(resultSet)
+  }
+
+  def applyDerivedMeasures(derivedMeasures: Iterable[DerivedMeasure])(result: RequestResult): RequestResult = {
+    if (derivedMeasures.isEmpty) result
+    else {
+      val resultSet = for {
+        tuple <- result.resultSet
+        derivedMeasure <- derivedMeasures
+      } yield derivedMeasure match {
+
+          case Div(m1, m2) =>
+            val value = (for {
+              v1 <- tuple.get(m1.name).map(_.toString.toDouble) if v1 > 0
+              v2 <- tuple.get(m2.name).map(_.toString.toDouble) if v2 > 0
+            } yield v1 / v2) getOrElse 0d
+
+            tuple + (derivedMeasure.name -> value)
+
+        }
+
+      result.copy(resultSet = resultSet)
+    }
   }
 
 }

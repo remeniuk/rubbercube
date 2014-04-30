@@ -8,7 +8,7 @@ trait ExecutionEngine[RequestType] extends RequestBuilder[RequestType]
 with RequestRunner[RequestType] {
 
   def execute(cube: Cube): RequestResult = {
-    (buildRequest _ andThen runQuery _)(cube)
+    (buildRequest _ andThen runQuery _ andThen applyDerivedMeasures(cube.derivedMeasures) _)(cube)
   }
 
 }

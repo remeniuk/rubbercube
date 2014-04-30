@@ -7,8 +7,19 @@ import com.bokland.rubbercube.Dimension
  */
 trait Measure {
 
-  val dimension: Dimension
+  def dimension: Dimension
 
-  def name = s"${getClass.getSimpleName.toLowerCase}-${dimension.fqn}"
+  def name = s"${getClass.getSimpleName.toLowerCase}-${dimension.name}"
 
 }
+
+trait DerivedMeasure extends Measure {
+
+  def dimension: Dimension = ???
+
+  val measures: Seq[Measure]
+
+  override def name = s"${getClass.getSimpleName.toLowerCase}-${measures.map(_.name).mkString("-")}"
+
+}
+
