@@ -34,10 +34,11 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
         Seq(CountDistinct(Dimension("_parent"))))
 
       engine.execute(cube) should be(
-        RequestResult(List("date", "countdistinct-_parent"),
-          List(List("2014-01-01T00:00:00.000Z", 2), List("2014-01-02T00:00:00.000Z", 1),
-            List("2014-01-03T00:00:00.000Z", 1)))
-      )
+        RequestResult(List(
+          Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 2),
+          Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1),
+          Map("date" -> "2014-01-03T00:00:00.000Z", "countdistinct-_parent" -> 1)
+        )))
     }
 
     "be calculated with filter, applied to purchase" in {
@@ -48,8 +49,10 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
       )
 
       engine.execute(cube) should be(
-        RequestResult(List("date", "countdistinct-_parent"),
-          List(List("2014-01-01T00:00:00.000Z", 1), List("2014-01-02T00:00:00.000Z", 1)))
+        RequestResult(List(
+          Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1),
+          Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1)
+        ))
       )
     }
 
@@ -62,8 +65,10 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
       )
 
       engine.execute(cube) should be(
-        RequestResult(List("date", "countdistinct-_parent"),
-          List(List("2014-01-01T00:00:00.000Z", 1), List("2014-01-02T00:00:00.000Z", 1)))
+        RequestResult(List(
+          Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1),
+          Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1)
+        ))
       )
     }
   }

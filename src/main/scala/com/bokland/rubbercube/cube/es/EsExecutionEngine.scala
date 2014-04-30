@@ -57,37 +57,30 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
   def runQuery(query: SearchRequestBuilder): RequestResult = {
     val result = query.execute().get()
 
-    var aggregationNames = Seq[String]()
-
-    def buildResultSet(aggregation: Aggregation, tuple: Seq[Any] = Nil,
-                       resultSet: Seq[Seq[Any]]): Seq[Seq[Any]] = {
-
-      aggregationNames = aggregationNames :+ aggregation.getName
+    def buildResultSet(aggregation: Aggregation, tuple: Map[String, Any] = Map(),
+                       resultSet: Seq[Map[String, Any]] = Nil): Seq[Map[String, Any]] = {
 
       aggregation match {
 
         case dateHistogram: DateHistogram =>
           dateHistogram.getBuckets.map {
             bucket =>
-                bucket.getAggregations.map(buildResultSet(_, tuple :+ bucket.getKey, resultSet))
+                bucket.getAggregations.map(buildResultSet(_, tuple + (aggregation.getName -> bucket.getKey), resultSet))
                   .flatten.toSeq
           }.flatten.toSeq
 
-        case cardinality: Cardinality =>
-          resultSet :+ (tuple :+ cardinality.getValue)
+        case cardinality: Cardinality => resultSet :+ (tuple + (aggregation.getName -> cardinality.getValue))
 
-        case sum: Sum =>
-          resultSet :+ (tuple :+ sum.getValue)
+        case sum: Sum => resultSet :+ (tuple + (aggregation.getName -> sum.getValue))
 
-        case count: ValueCount =>
-          resultSet :+ (tuple :+ count.getValue)
+        case count: ValueCount => resultSet :+ (tuple + (aggregation.getName -> count.getValue))
 
       }
     }
 
-    val resultSet = result.getAggregations.map(buildResultSet(_, Nil, Nil)).flatten.toSeq
+    val resultSet = result.getAggregations.map(buildResultSet(_)).flatten.toSeq
 
-    RequestResult(Seq(aggregationNames.distinct: _*), resultSet)
+    RequestResult(resultSet)
   }
 
 }
