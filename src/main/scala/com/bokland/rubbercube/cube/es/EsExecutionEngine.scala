@@ -4,12 +4,14 @@ import org.elasticsearch.action.search.SearchRequestBuilder
 import com.bokland.rubbercube.cube.{RequestResult, Cube, ExecutionEngine}
 import org.elasticsearch.client.transport.TransportClient
 import com.bokland.rubbercube.marshaller.es.EsFilterMarshaller
-import com.bokland.rubbercube.kpi.es.EsAggregationQueryBuilder
+import com.bokland.rubbercube.measure.es.EsAggregationQueryBuilder
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
 import scala.collection.JavaConversions._
 import org.elasticsearch.search.aggregations.Aggregation
-import org.elasticsearch.search.aggregations.metrics.cardinality.InternalCardinality
+import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality
 import org.elasticsearch.index.query.QueryBuilders._
+import org.elasticsearch.search.aggregations.metrics.sum.Sum
+import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -21,8 +23,8 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
 
     val search = client.prepareSearch(index).setTypes(cube.id).setSize(0)
 
-    kpis.foreach {
-      kpi => search.addAggregation(EsAggregationQueryBuilder.buildAggregationQuery(kpi, aggregations))
+    measures.foreach {
+      measure => search.addAggregation(EsAggregationQueryBuilder.buildAggregationQuery(measure, aggregations))
     }
 
     if (filters.size > 0) {
@@ -67,16 +69,18 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
         case dateHistogram: DateHistogram =>
           dateHistogram.getBuckets.map {
             bucket =>
-              if (bucket.getAggregations.isEmpty) {
-                resultSet :+ (tuple :+ bucket.getKey :+ bucket.getDocCount)
-              } else {
                 bucket.getAggregations.map(buildResultSet(_, tuple :+ bucket.getKey, resultSet))
                   .flatten.toSeq
-              }
           }.flatten.toSeq
 
-        case cardinality: InternalCardinality =>
+        case cardinality: Cardinality =>
           resultSet :+ (tuple :+ cardinality.getValue)
+
+        case sum: Sum =>
+          resultSet :+ (tuple :+ sum.getValue)
+
+        case count: ValueCount =>
+          resultSet :+ (tuple :+ count.getValue)
 
       }
     }

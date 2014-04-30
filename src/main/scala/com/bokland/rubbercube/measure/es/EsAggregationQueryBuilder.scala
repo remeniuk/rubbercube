@@ -1,19 +1,35 @@
-package com.bokland.rubbercube.kpi.es
+package com.bokland.rubbercube.measure.es
 
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder
-import com.bokland.rubbercube.kpi.{Kpi, AggregationQueryBuilder}
+import com.bokland.rubbercube.measure.{Measure, AggregationQueryBuilder}
 import com.bokland.rubbercube._
 import org.elasticsearch.search.aggregations.AggregationBuilders._
 import com.bokland.rubbercube.Dimension
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
 import com.bokland.rubbercube.DateAggregationType.DateAggregationType
-import com.bokland.rubbercube.kpi.MobileKpi.UniquePayersCount
+import com.bokland.rubbercube.measure.Measures.CountDistinct
 
 /**
  * Created by remeniuk on 4/29/14.
  */
 
 object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggregationBuilder] {
+
+  def buildAggregationQuery(measure: Measure, aggregations: Map[Dimension, AggregationType]) = {
+    val aggregationQuery = buildQueryCore(aggregations)
+
+    measure match {
+
+      case CountDistinct(userDimension) =>
+        val query = cardinality(measure.name).field(userDimension.fqn)
+        addSubAggregation(aggregationQuery, query)
+
+    }
+
+    aggregationQuery
+  }
+
+  ///////////////////////
 
   private implicit def toEsInterval(dateType: DateAggregationType) =
     dateType match {
@@ -53,18 +69,6 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
     }
 
     aggregation
-  }
-
-  def buildAggregationQuery(kpi: Kpi, aggregations: Map[Dimension, AggregationType]) = {
-    val aggregationQuery = buildQueryCore(aggregations)
-
-    kpi match {
-      case UniquePayersCount(userDimension) =>
-        val kpiQuery = cardinality(kpi.name).field(userDimension.fqn)
-        addSubAggregation(aggregationQuery, kpiQuery)
-    }
-
-    aggregationQuery
   }
 
 }

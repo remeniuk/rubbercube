@@ -1,4 +1,4 @@
-package com.bokland.rubbercube.kpi
+package com.bokland.rubbercube.measure
 
 import com.bokland.rubbercube.{AggregationType, Dimension}
 
@@ -7,6 +7,6 @@ import com.bokland.rubbercube.{AggregationType, Dimension}
  */
 trait AggregationQueryBuilder[QueryType] {
 
-    def buildAggregationQuery(kpi: Kpi, aggregations: Map[Dimension, AggregationType]): QueryType
+    def buildAggregationQuery(measure: Measure, aggregations: Map[Dimension, AggregationType]): QueryType
 
 }
