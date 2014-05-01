@@ -1,11 +1,10 @@
 package com.bokland.rubbercube.marshaller.es
 
-import com.bokland.rubbercube.filter.Filter
-import Filter._
+import com.bokland.rubbercube.filter._
 import org.elasticsearch.index.query.QueryBuilder
 import org.elasticsearch.index.query.QueryBuilders._
 import com.bokland.rubbercube.filter.Filter
-import com.bokland.rubbercube.Marshaller
+import com.bokland.rubbercube.marshaller.Marshaller
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -67,8 +66,8 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
           parentQuery
         }
 
-      case other =>
-        matchQuery(filter.dimension.name, filter.value)
+      case other: SingleDimension =>
+        matchQuery(other.dimension.name, other.value)
     }
   }
 

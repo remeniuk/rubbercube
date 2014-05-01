@@ -6,9 +6,8 @@ import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import com.bokland.rubbercube.{CategoryAggregation, DateAggregationType, DateAggregation, Dimension}
-import com.bokland.rubbercube.measure.Measures.{Sum, CountDistinct}
-import com.bokland.rubbercube.measure.DerivedMeasures.Div
-import com.bokland.rubbercube.filter.Filter.eql
+import com.bokland.rubbercube.measure._
+import com.bokland.rubbercube.filter._
 import com.bokland.rubbercube.measure.MeasureReference
 
 /**

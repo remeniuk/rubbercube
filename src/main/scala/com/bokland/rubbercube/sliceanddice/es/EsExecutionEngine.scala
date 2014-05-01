@@ -16,7 +16,7 @@ import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount
 import com.bokland.rubbercube.measure.{DerivedMeasure, Measure}
 import EsAggregationQueryBuilder._
 import RequestResult._
-import com.bokland.rubbercube.measure.DerivedMeasures.Div
+import com.bokland.rubbercube.measure._
 import com.bokland.rubbercube.Dimension
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 
@@ -52,7 +52,7 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
       val parentFilters = for {
         parentCubeId <- sliceAndDice.parentId.toIterable
         filter <- filters
-        filterCubeId <- filter.dimension.cubeId if filterCubeId == parentCubeId
+        filterCubeId <- filter.cubeId if filterCubeId == parentCubeId
       } yield filter
 
       filters.toList.diff(parentFilters.toList).foreach {
@@ -61,7 +61,7 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
 
       parentFilters.foreach {
         filter =>
-          query.must(hasParentQuery(filter.dimension.cubeId.get,
+          query.must(hasParentQuery(filter.cubeId.get,
             EsFilterMarshaller.marshal(filter)))
       }
 

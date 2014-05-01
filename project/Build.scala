@@ -16,12 +16,23 @@ object Resolvers {
 
 object Dependencies {
 
+  val casbahVer = "2.5.0"
+
   val config = "com.typesafe" % "config" % "1.2.0"
+
   val scalatest = "org.scalatest" %% "scalatest" % "2.1.2" % "test"
   val specs2 = "org.specs2" %% "specs2" % "2.3.10" % "test"
+
   val slf4j = "org.slf4j" % "slf4j-log4j12" % "1.6.4"
+
   val elasticSearch = "org.elasticsearch" % "elasticsearch" % "1.1.1"
-  
+
+  val casbahCore = "org.mongodb" %% "casbah-core" % casbahVer
+  val casbahQuery = "org.mongodb" %% "casbah-query" % casbahVer
+  val casbahCommons = "org.mongodb" %% "casbah-commons" % casbahVer
+
+  val lift_json = "net.liftweb" %% "lift-json" % "2.5.1"
+
 }
 
 object RubberCubeBuild extends Build {
@@ -35,7 +46,8 @@ object RubberCubeBuild extends Build {
     file("."),
     settings = buildSettings ++ Seq(
       libraryDependencies ++= Seq(
-        elasticSearch, config, scalatest, specs2, slf4j
+        elasticSearch, config, scalatest, specs2, slf4j, lift_json,
+        casbahCore, casbahQuery, casbahCommons
       )
     )
   )

@@ -7,7 +7,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders._
 import com.bokland.rubbercube.Dimension
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
 import com.bokland.rubbercube.DateAggregationType.DateAggregationType
-import com.bokland.rubbercube.measure.Measures.{Avg, Sum, Count, CountDistinct}
+import com.bokland.rubbercube.measure._
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -22,19 +22,19 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
 
       case CountDistinct(userDimension, alias) =>
         addSubAggregation(lowestAggregation, cardinality(alias.getOrElse(measure.name))
-          .field(userDimension.fqn))
+          .field(userDimension.fieldName))
 
       case Count(userDimension, alias) =>
         addSubAggregation(lowestAggregation, count(alias.getOrElse(measure.name))
-          .field(userDimension.fqn))
+          .field(userDimension.fieldName))
 
       case Sum(userDimension, alias) =>
         addSubAggregation(lowestAggregation, sum(alias.getOrElse(measure.name))
-          .field(userDimension.fqn))
+          .field(userDimension.fieldName))
 
       case Avg(userDimension, alias) =>
         addSubAggregation(lowestAggregation, avg(alias.getOrElse(measure.name))
-          .field(userDimension.fqn))
+          .field(userDimension.fieldName))
 
     }
 
@@ -55,9 +55,9 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
   private def buildAggregationQuery(aggregation: (Dimension, AggregationType)): AbstractAggregationBuilder = {
     val (dimension, aggregationType) = aggregation
     aggregationType match {
-      case CategoryAggregation => terms(dimension.fqn).field(dimension.fqn)
-      case DateAggregation(interval) => dateHistogram(dimension.fqn)
-        .interval(interval).field(dimension.fqn)
+      case CategoryAggregation => terms(dimension.name).field(dimension.fieldName)
+      case DateAggregation(interval) => dateHistogram(dimension.name)
+        .interval(interval).field(dimension.fieldName)
     }
   }
 
