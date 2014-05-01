@@ -18,6 +18,7 @@ import EsAggregationQueryBuilder._
 import RequestResult._
 import com.bokland.rubbercube.measure.DerivedMeasures.Div
 import com.bokland.rubbercube.Dimension
+import org.elasticsearch.search.aggregations.bucket.terms.Terms
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -79,6 +80,9 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
       case count: ValueCount => aggregation.getName -> count.getValue
     }
 
+  private def isBucketAggregation(aggregation: Aggregation): Boolean =
+    aggregation.isInstanceOf[DateHistogram] || aggregation.isInstanceOf[Terms]
+
   def runQuery(query: SearchRequestBuilder): RequestResult = {
     val result = query.execute().get()
 
@@ -89,12 +93,25 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
 
       aggregation match {
 
+        case terms: Terms =>
+          terms.getBuckets.foreach {
+            bucket =>
+            // if child aggregation is bucket aggregation, drill down
+              if (bucket.getAggregations.forall(isBucketAggregation)) {
+                bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
+              } else {
+                // if child aggregation is category aggregation, build tuple and add it to result
+                resultSet = resultSet + ((tuple + (aggregation.getName -> bucket.getKey)) ++
+                  bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
+              }
+          }
+
         case dateHistogram: DateHistogram =>
 
           dateHistogram.getBuckets.foreach {
             bucket =>
             // if child aggregation is bucket aggregation, drill down
-              if (bucket.getAggregations.forall(a => a.isInstanceOf[DateHistogram])) {
+              if (bucket.getAggregations.forall(isBucketAggregation)) {
                 bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
               } else {
                 // if child aggregation is category aggregation, build tuple and add it to result

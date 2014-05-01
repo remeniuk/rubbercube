@@ -5,7 +5,7 @@ import com.bokland.rubbercube.sliceanddice.{LeftJoin, RequestResult, SliceAndDic
 import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
-import com.bokland.rubbercube.{DateAggregationType, DateAggregation, Dimension}
+import com.bokland.rubbercube.{CategoryAggregation, DateAggregationType, DateAggregation, Dimension}
 import com.bokland.rubbercube.measure.Measures.{Sum, CountDistinct}
 import com.bokland.rubbercube.measure.DerivedMeasures.Div
 import com.bokland.rubbercube.filter.Filter.eql
@@ -117,14 +117,28 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
       )))
   }
 
+  "Revenue by country by gender" in {
+    val query = SliceAndDice("purchase",
+      Map(Dimension("country") -> CategoryAggregation,
+        Dimension("gender") -> CategoryAggregation),
+      Seq(Sum(Dimension("amount"), alias = Some("total_revenue"))))
+
+    engine.execute(query) should be(
+      RequestResult(List(
+        Map("country" -> "us", "gender" -> "female", "total_revenue" -> 8.97),
+        Map("country" -> "gb", "gender" -> "male", "total_revenue" -> 119.97999999999999)
+      ))
+    )
+  }
+
   "Revenue per user per day" in {
     val revenuePerDay = SliceAndDice("purchase",
       Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
-      Seq(Sum(Dimension("amount"), Some("daily_revenue"))))
+      Seq(Sum(Dimension("amount"), alias = Some("daily_revenue"))))
 
     val onlinePerDay = SliceAndDice("session",
       Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
-      Seq(CountDistinct(Dimension("_parent"), Some("dau"))))
+      Seq(CountDistinct(Dimension("_parent"), alias = Some("dau"))))
 
     val result = engine.execute(LeftJoin(Seq(onlinePerDay, revenuePerDay), Seq(Dimension("date")),
       Seq(Div(MeasureReference("daily_revenue"), MeasureReference("dau"), Some("arppdau")))))
