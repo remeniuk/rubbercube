@@ -1,7 +1,7 @@
-package com.bokland.rubbercube.cube.es
+package com.bokland.rubbercube.sliceanddice.es
 
 import org.elasticsearch.action.search.SearchRequestBuilder
-import com.bokland.rubbercube.cube.{RequestResult, Cube, ExecutionEngine}
+import com.bokland.rubbercube.sliceanddice.{RequestResult, SliceAndDice, ExecutionEngine}
 import org.elasticsearch.client.transport.TransportClient
 import com.bokland.rubbercube.marshaller.es.EsFilterMarshaller
 import com.bokland.rubbercube.measure.es.EsAggregationQueryBuilder
@@ -15,18 +15,22 @@ import org.elasticsearch.search.aggregations.metrics.avg.Avg
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount
 import com.bokland.rubbercube.measure.{DerivedMeasure, Measure}
 import EsAggregationQueryBuilder._
+import RequestResult._
 import com.bokland.rubbercube.measure.DerivedMeasures.Div
+import com.bokland.rubbercube.Dimension
 
 /**
  * Created by remeniuk on 4/29/14.
  */
 class EsExecutionEngine(client: TransportClient, index: String) extends ExecutionEngine[SearchRequestBuilder] {
 
-  def buildRequest(cube: Cube): SearchRequestBuilder = {
-    import cube._
+  def buildRequest(sliceAndDice: SliceAndDice): SearchRequestBuilder = {
+    import sliceAndDice._
 
-    val search = client.prepareSearch(index).setTypes(cube.id).setSize(0)
+    // return no documents
+    val search = client.prepareSearch(index).setTypes(sliceAndDice.id).setSize(0)
 
+    // add aggregations
     measures.foreach {
       case derivedMeasure: DerivedMeasure =>
         derivedMeasure.measures.map {
@@ -38,12 +42,14 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
         search.addAggregation(buildAggregationQuery(measure, aggregations))
     }
 
+    // add filters, if defined
     if (filters.size > 0) {
 
       val query = boolQuery()
 
+      // find filters that should be applied to parent document
       val parentFilters = for {
-        parentCubeId <- cube.parentId.toIterable
+        parentCubeId <- sliceAndDice.parentId.toIterable
         filter <- filters
         filterCubeId <- filter.dimension.cubeId if filterCubeId == parentCubeId
       } yield filter
@@ -76,7 +82,7 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
   def runQuery(query: SearchRequestBuilder): RequestResult = {
     val result = query.execute().get()
 
-    var rs: Set[Map[String, Any]] = Set()
+    var resultSet: Set[Map[String, Any]] = Set()
 
     // processes bucket aggregations
     def parseResults(aggregation: Aggregation, tuple: Map[String, Any] = Map()): Any = {
@@ -92,7 +98,7 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
                 bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
               } else {
                 // if child aggregation is category aggregation, build tuple and add it to result
-                rs = rs + ((tuple + (aggregation.getName -> bucket.getKey)) ++
+                resultSet = resultSet + ((tuple + (aggregation.getName -> bucket.getKey)) ++
                   bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
               }
           }
@@ -100,17 +106,28 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
       }
     }
 
-    val resultSet = if (result.getAggregations.size == 1) {
-      parseResults(result.getAggregations.head)
-      rs.toSeq
-    } else {
-      // may only happen, if category aggregations are upper level, and there're no
-      // bucket aggregations
-      Seq(result.getAggregations.map(parseCategoryAggregationResult).toMap)
+    RequestResult {
+      if (result.getAggregations.size == 1) {
+        parseResults(result.getAggregations.head)
+        resultSet.toSeq
+      } else {
+        // may only happen, if category aggregations are upper level, and there're no
+        // bucket aggregations
+        Seq(result.getAggregations.map(parseCategoryAggregationResult).toMap)
+      }
     }
-
-    RequestResult(resultSet)
   }
+
+  def joinResults(by: Seq[Dimension])(resultSets: Iterable[RequestResult]): RequestResult =
+    RequestResult {
+      resultSets.head.resultSet.map {
+        leftTuple =>
+          val valuesToJoinBy = leftTuple.filterKeys(by.map(_.name).contains)
+          val rightTuples = resultSets.tail.toList.flatMap(_.find(valuesToJoinBy))
+
+          joinTuples(leftTuple :: rightTuples)
+      }
+    }
 
   def applyDerivedMeasures(derivedMeasures: Iterable[DerivedMeasure])(result: RequestResult): RequestResult = {
     if (derivedMeasures.isEmpty) result
@@ -120,13 +137,13 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
         derivedMeasure <- derivedMeasures
       } yield derivedMeasure match {
 
-          case Div(m1, m2) =>
+          case Div(m1, m2, alias) =>
             val value = (for {
               v1 <- tuple.get(m1.name).map(_.toString.toDouble) if v1 > 0
               v2 <- tuple.get(m2.name).map(_.toString.toDouble) if v2 > 0
             } yield v1 / v2) getOrElse 0d
 
-            tuple + (derivedMeasure.name -> value)
+            tuple + (alias.getOrElse(derivedMeasure.name) -> value)
 
         }
 

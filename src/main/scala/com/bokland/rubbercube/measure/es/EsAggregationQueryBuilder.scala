@@ -20,17 +20,21 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
 
     measure match {
 
-      case CountDistinct(userDimension) =>
-        addSubAggregation(lowestAggregation, cardinality(measure.name).field(userDimension.fqn))
+      case CountDistinct(userDimension, alias) =>
+        addSubAggregation(lowestAggregation, cardinality(alias.getOrElse(measure.name))
+          .field(userDimension.fqn))
 
-      case Count(userDimension) =>
-        addSubAggregation(lowestAggregation, count(measure.name).field(userDimension.fqn))
+      case Count(userDimension, alias) =>
+        addSubAggregation(lowestAggregation, count(alias.getOrElse(measure.name))
+          .field(userDimension.fqn))
 
-      case Sum(userDimension) =>
-        addSubAggregation(lowestAggregation, sum(measure.name).field(userDimension.fqn))
+      case Sum(userDimension, alias) =>
+        addSubAggregation(lowestAggregation, sum(alias.getOrElse(measure.name))
+          .field(userDimension.fqn))
 
-      case Avg(userDimension) =>
-        addSubAggregation(lowestAggregation, avg(measure.name).field(userDimension.fqn))
+      case Avg(userDimension, alias) =>
+        addSubAggregation(lowestAggregation, avg(alias.getOrElse(measure.name))
+          .field(userDimension.fqn))
 
     }
 

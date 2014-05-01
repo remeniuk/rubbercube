@@ -1,7 +1,7 @@
-package com.bokland.rubbercube.cube.es
+package com.bokland.rubbercube.sliceanddice.es
 
 import org.scalatest.{BeforeAndAfterAll, ShouldMatchers, WordSpec}
-import com.bokland.rubbercube.cube.{RequestResult, Cube}
+import com.bokland.rubbercube.sliceanddice.{LeftJoin, RequestResult, SliceAndDice}
 import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
@@ -9,6 +9,7 @@ import com.bokland.rubbercube.{DateAggregationType, DateAggregation, Dimension}
 import com.bokland.rubbercube.measure.Measures.{Sum, CountDistinct}
 import com.bokland.rubbercube.measure.DerivedMeasures.Div
 import com.bokland.rubbercube.filter.Filter.eql
+import com.bokland.rubbercube.measure.MeasureReference
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -30,11 +31,11 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
   "Daily unique payers count" should {
     "be calculated with no filter" in {
-      val cube = Cube("purchase",
+      val sliceAndDice = SliceAndDice("purchase",
         Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))))
 
-      engine.execute(cube) should be(
+      engine.execute(sliceAndDice) should be(
         RequestResult(List(
           Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 2),
           Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1),
@@ -43,13 +44,13 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     }
 
     "be calculated with filter, applied to purchase" in {
-      val cube = Cube("purchase",
+      val sliceAndDice = SliceAndDice("purchase",
         Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))),
         Seq(eql(Dimension("country"), "US"), eql(Dimension("gender"), "Female"))
       )
 
-      engine.execute(cube) should be(
+      engine.execute(sliceAndDice) should be(
         RequestResult(List(
           Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1),
           Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1)
@@ -58,14 +59,14 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     }
 
     "be calculated with filter, applied to parent document" in {
-      val cube = Cube("purchase",
+      val sliceAndDice = SliceAndDice("purchase",
         Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))),
         Seq(eql(Dimension("country"), "US"), eql(Dimension("source", cubeId = Some("user")), "Organic")),
         parentId = Some("user")
       )
 
-      engine.execute(cube) should be(
+      engine.execute(sliceAndDice) should be(
         RequestResult(List(
           Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1),
           Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1)
@@ -75,7 +76,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
   }
 
   "Revenue per day per daily cohort" in {
-    val cube = Cube("purchase",
+    val cube = SliceAndDice("purchase",
       Map(Dimension("date") -> DateAggregation(DateAggregationType.Day),
         Dimension("registration_date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Sum(Dimension("amount")), CountDistinct(Dimension("_parent"))))
@@ -91,7 +92,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
   }
 
   "Revenue per day" in {
-    val cube = Cube("purchase",
+    val cube = SliceAndDice("purchase",
       Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Sum(Dimension("amount")), CountDistinct(Dimension("_parent"))))
 
@@ -103,8 +104,8 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
       )))
   }
 
-  "Revenue per user per day" in {
-    val cube = Cube("purchase",
+  "Revenue per paying user per day" in {
+    val cube = SliceAndDice("purchase",
       Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Div(Sum(Dimension("amount")), CountDistinct(Dimension("_parent")))))
 
@@ -113,6 +114,26 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
         Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 2, "sum-amount" -> 21.979999999999997, "div-sum-amount-countdistinct-_parent" -> 10.989999999999998),
         Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 6.98, "div-sum-amount-countdistinct-_parent" -> 6.98),
         Map("date" -> "2014-01-03T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 99.99, "div-sum-amount-countdistinct-_parent" -> 99.99)
+      )))
+  }
+
+  "Revenue per user per day" in {
+    val revenuePerDay = SliceAndDice("purchase",
+      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+      Seq(Sum(Dimension("amount"), Some("daily_revenue"))))
+
+    val onlinePerDay = SliceAndDice("session",
+      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+      Seq(CountDistinct(Dimension("_parent"), Some("dau"))))
+
+    val result = engine.execute(LeftJoin(Seq(onlinePerDay, revenuePerDay), Seq(Dimension("date")),
+      Seq(Div(MeasureReference("daily_revenue"), MeasureReference("dau"), Some("arppdau")))))
+
+    result should be(
+      RequestResult(List(
+        Map("date" -> "2014-01-01T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 21.979999999999997, "arppdau" -> 10.989999999999998),
+        Map("date" -> "2014-01-02T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 6.98, "arppdau" -> 3.49),
+        Map("date" -> "2014-01-03T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 99.99, "arppdau" -> 49.995)
       )))
   }
 
