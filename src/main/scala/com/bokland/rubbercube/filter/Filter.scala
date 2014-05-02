@@ -1,6 +1,6 @@
 package com.bokland.rubbercube.filter
 
-import com.bokland.rubbercube.Dimension
+import com.bokland.rubbercube.{DimensionValue, Dimension}
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -15,7 +15,7 @@ trait SingleDimension {
   self: Filter =>
 
   val dimension: Dimension
-  val value: Any
+  val value: DimensionValue
 
   def cubeId: Option[String] = dimension.cubeId
 }

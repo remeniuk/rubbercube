@@ -51,11 +51,11 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
         subQuery
 
       case p: sequence =>
-        if (p.value.forall(_.forall(_ == ""))) null
+        if (p.value.value.forall(_.forall(_ == ""))) null
         else {
 
           val parentQuery = spanOrQuery()
-          p.value.foreach {
+          p.value.value.foreach {
             sequence =>
               parentQuery.clause((spanNearQuery().slop(MAX_SLOP).inOrder(true) /: sequence) {
                 (query, regexTerm) =>

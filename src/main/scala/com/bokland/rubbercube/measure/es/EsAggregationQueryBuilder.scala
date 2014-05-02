@@ -1,13 +1,17 @@
 package com.bokland.rubbercube.measure.es
 
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder
-import com.bokland.rubbercube.measure.{Measure, AggregationQueryBuilder}
 import com.bokland.rubbercube._
 import org.elasticsearch.search.aggregations.AggregationBuilders._
-import com.bokland.rubbercube.Dimension
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
-import com.bokland.rubbercube.DateAggregationType.DateAggregationType
 import com.bokland.rubbercube.measure._
+import com.bokland.rubbercube.measure.Sum
+import com.bokland.rubbercube.DateAggregation
+import com.bokland.rubbercube.measure.Count
+import com.bokland.rubbercube.measure.CountDistinct
+import com.bokland.rubbercube.measure.Avg
+import com.bokland.rubbercube.DateAggregationType.DateAggregationType
+import com.bokland.rubbercube.DateAggregationType
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -15,7 +19,7 @@ import com.bokland.rubbercube.measure._
 
 object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggregationBuilder] {
 
-  def buildAggregationQuery(measure: Measure, aggregations: Map[Dimension, AggregationType]) = {
+  def buildAggregationQuery(measure: Measure, aggregations: Seq[Aggregation]) = {
     val (aggregationQuery, lowestAggregation) = buildQueryCore(aggregations)
 
     measure match {
@@ -52,8 +56,8 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
       case DateAggregationType.Day => DateHistogram.Interval.DAY
     }
 
-  private def buildAggregationQuery(aggregation: (Dimension, AggregationType)): AbstractAggregationBuilder = {
-    val (dimension, aggregationType) = aggregation
+  private def buildAggregationQuery(aggregation: Aggregation): AbstractAggregationBuilder = {
+    val Aggregation(dimension, aggregationType) = aggregation
     aggregationType match {
       case CategoryAggregation => terms(dimension.name).field(dimension.fieldName)
       case DateAggregation(interval) => dateHistogram(dimension.name)
@@ -70,7 +74,7 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
     subAgg
   }
 
-  private def buildQueryCore(aggregations: Map[Dimension, AggregationType]):
+  private def buildQueryCore(aggregations: Seq[Aggregation]):
   (AbstractAggregationBuilder, AbstractAggregationBuilder) = {
     val aggregation: AbstractAggregationBuilder = buildAggregationQuery(aggregations.head)
     var subAgg: AbstractAggregationBuilder = null

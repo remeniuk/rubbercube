@@ -31,7 +31,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
   "Daily unique payers count" should {
     "be calculated with no filter" in {
       val sliceAndDice = SliceAndDice("purchase",
-        Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+        Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))))
 
       engine.execute(sliceAndDice) should be(
@@ -44,7 +44,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
     "be calculated with filter, applied to purchase" in {
       val sliceAndDice = SliceAndDice("purchase",
-        Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+        Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))),
         Seq(eql(Dimension("country"), "US"), eql(Dimension("gender"), "Female"))
       )
@@ -59,7 +59,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
     "be calculated with filter, applied to parent document" in {
       val sliceAndDice = SliceAndDice("purchase",
-        Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+        Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))),
         Seq(eql(Dimension("country"), "US"), eql(Dimension("source", cubeId = Some("user")), "Organic")),
         parentId = Some("user")
@@ -76,7 +76,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
   "Revenue per day per daily cohort" in {
     val cube = SliceAndDice("purchase",
-      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day),
+      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day),
         Dimension("registration_date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Sum(Dimension("amount")), CountDistinct(Dimension("_parent"))))
 
@@ -92,7 +92,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
   "Revenue per day" in {
     val cube = SliceAndDice("purchase",
-      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Sum(Dimension("amount")), CountDistinct(Dimension("_parent"))))
 
     engine.execute(cube) should be(
@@ -105,7 +105,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
   "Revenue per paying user per day" in {
     val cube = SliceAndDice("purchase",
-      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Div(Sum(Dimension("amount")), CountDistinct(Dimension("_parent")))))
 
     engine.execute(cube) should be(
@@ -118,7 +118,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
   "Revenue by country by gender" in {
     val query = SliceAndDice("purchase",
-      Map(Dimension("country") -> CategoryAggregation,
+      Seq(Dimension("country") -> CategoryAggregation,
         Dimension("gender") -> CategoryAggregation),
       Seq(Sum(Dimension("amount"), alias = Some("total_revenue"))))
 
@@ -132,11 +132,11 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
   "Revenue per user per day" in {
     val revenuePerDay = SliceAndDice("purchase",
-      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Sum(Dimension("amount"), alias = Some("daily_revenue"))))
 
     val onlinePerDay = SliceAndDice("session",
-      Map(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
       Seq(CountDistinct(Dimension("_parent"), alias = Some("dau"))))
 
     val result = engine.execute(LeftJoin(Seq(onlinePerDay, revenuePerDay), Seq(Dimension("date")),

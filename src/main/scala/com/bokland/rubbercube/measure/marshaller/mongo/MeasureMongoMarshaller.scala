@@ -5,14 +5,13 @@ import com.bokland.rubbercube.measure._
 import com.mongodb.casbah.commons.MongoDBObject
 import com.bokland.rubbercube.measure.MeasureReference
 import com.bokland.rubbercube.measure.CountDistinct
-import com.bokland.rubbercube.marshaller.mongo.DimensionMongoMarshaller
+import com.bokland.rubbercube.marshaller.mongo.{MongoMarshaller, DimensionMongoMarshaller}
 import com.mongodb.casbah.query.Imports._
 
 /**
  * Created by remeniuk on 5/1/14.
  */
-object MeasureMongoMarshaller extends Marshaller[Measure, DBObject]
-with Unmarshaller[DBObject, Measure] {
+object MeasureMongoMarshaller extends MongoMarshaller[Measure] {
 
   def marshal(obj: Measure): DBObject = {
     val builder = MongoDBObject.newBuilder
