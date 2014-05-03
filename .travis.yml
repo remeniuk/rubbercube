@@ -1,0 +1,16 @@
+language: scala
+scala:
+  - 2.11.0
+  - 2.10.4
+branches:
+  only:
+    - master
+notifications:
+  email:
+    recipients:
+      - vasil.remeniuk@gmail.com
+jdk:
+  - openjdk7
+  - oraclejdk7
+services:
+  - elasticsearch
