@@ -1,9 +1,10 @@
 scalaVersion := "2.10.4"
 
 resolvers ++= Seq(
-    "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
-    "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/"
-    )
+  "Sonatype snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
+  "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases/",
+  "sbt-github-repo" at "http://sbt-github-repo.fever.ch"
+)
 
 addSbtPlugin("org.scalastyle" %% "scalastyle-sbt-plugin" % "0.3.2")
 
@@ -16,3 +17,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.6.4")
 addSbtPlugin("com.github.gseitz" % "sbt-release" % "0.8.3")
 
 addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "1.6.0")
+
+addSbtPlugin("ch.fever" % "sbt-githubrepo-plugin" % "0.1.1")
