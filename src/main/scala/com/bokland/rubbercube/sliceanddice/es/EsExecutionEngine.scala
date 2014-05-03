@@ -1,7 +1,7 @@
 package com.bokland.rubbercube.sliceanddice.es
 
 import org.elasticsearch.action.search.SearchRequestBuilder
-import com.bokland.rubbercube.sliceanddice.{RequestResult, SliceAndDice, ExecutionEngine}
+import com.bokland.rubbercube.sliceanddice.{Mapping, RequestResult, SliceAndDice, ExecutionEngine}
 import org.elasticsearch.client.transport.TransportClient
 import com.bokland.rubbercube.marshaller.es.EsFilterMarshaller
 import com.bokland.rubbercube.measure.es.EsAggregationQueryBuilder
@@ -13,11 +13,9 @@ import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.metrics.sum.Sum
 import org.elasticsearch.search.aggregations.metrics.avg.Avg
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount
-import com.bokland.rubbercube.measure.{DerivedMeasure, Measure}
 import EsAggregationQueryBuilder._
 import RequestResult._
 import com.bokland.rubbercube.measure._
-import com.bokland.rubbercube.Dimension
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 
 /**
@@ -123,7 +121,7 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
       }
     }
 
-    RequestResult {
+    RequestResult(
       if (result.getAggregations.size == 1) {
         parseResults(result.getAggregations.head)
         resultSet.toSeq
@@ -131,16 +129,26 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
         // may only happen, if category aggregations are upper level, and there're no
         // bucket aggregations
         Seq(result.getAggregations.map(parseCategoryAggregationResult).toMap)
-      }
-    }
+      }, query.request().types().headOption
+    )
   }
 
-  def joinResults(by: Seq[Dimension])(resultSets: Iterable[RequestResult]): RequestResult =
+  def joinResults(by: Seq[Mapping])(resultSets: Iterable[RequestResult]): RequestResult =
     RequestResult {
       resultSets.head.resultSet.map {
         leftTuple =>
-          val valuesToJoinBy = leftTuple.filterKeys(by.map(_.name).contains)
-          val rightTuples = resultSets.tail.toList.flatMap(_.find(valuesToJoinBy))
+
+          val columnsToJoinBy = by.flatMap(_.dimensions.find(_.cubeId == resultSets.head.cubeId))
+          val valuesToJoinBy = leftTuple.filterKeys(columnsToJoinBy.map(_.name).contains)
+
+          val rightTuples = resultSets.tail.toList.flatMap {
+            rightResultSet =>
+              val joinColumnMapping = by.flatMap(mapping => mapping.dimensions.find(_.cubeId == rightResultSet.cubeId)
+                .map(_.name -> mapping.dimensions.head.name)).toMap
+              rightResultSet.find(valuesToJoinBy).map(_.map(t => if (joinColumnMapping.contains(t._1))
+                joinColumnMapping(t._1) -> t._2
+              else t))
+          }
 
           joinTuples(leftTuple :: rightTuples)
       }

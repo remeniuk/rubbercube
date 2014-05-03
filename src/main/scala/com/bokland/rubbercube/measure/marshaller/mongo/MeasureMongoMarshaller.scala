@@ -76,7 +76,7 @@ object MeasureMongoMarshaller extends MongoMarshaller[Measure] {
         obj.as[String]("operation") match {
 
           case "div" =>
-            Div(unmarshal(obj.as[DBObject]("obj1")), unmarshal(obj.as[DBObject]("obj2")),
+            Div(unmarshal(obj.as[DBObject]("dim1")), unmarshal(obj.as[DBObject]("dim2")),
               obj.getAs[String]("alias"))
 
         }

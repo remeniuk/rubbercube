@@ -12,6 +12,6 @@ trait RequestRunner[RequestType] {
 
   def applyDerivedMeasures(derivedMeasures: Iterable[DerivedMeasure])(result: RequestResult): RequestResult
 
-  def joinResults(by: Seq[Dimension])(resultSets: Iterable[RequestResult]): RequestResult
+  def joinResults(by: Seq[Mapping])(resultSets: Iterable[RequestResult]): RequestResult
 
 }

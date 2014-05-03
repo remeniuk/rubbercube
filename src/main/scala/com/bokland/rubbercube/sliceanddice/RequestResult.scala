@@ -10,7 +10,7 @@ object RequestResult {
 
 }
 
-case class RequestResult(resultSet: Seq[Map[String, Any]]) {
+case class RequestResult(resultSet: Seq[Map[String, Any]], cubeId: Option[String] = None) {
 
   def find(query: Map[String, Any]): Option[Map[String, Any]] = {
     resultSet.find(_.toList.containsSlice(query.toList))
