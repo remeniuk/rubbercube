@@ -14,3 +14,5 @@ jdk:
   - oraclejdk7
 services:
   - elasticsearch
+before_script:
+  curl https://github.com/bokland/rubbercube/blob/master/test/create_test_index.sh | bash

@@ -11,7 +11,10 @@ object BuildSettings {
 }
 
 object Resolvers {
-  val snapshotsRepo = "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"  
+  val sonatypeSnaps = "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots"
+  val sonatypeRels = "Sonatype releases" at "https://oss.sonatype.org/content/repositories/releases"
+  val sonatypeSTArch = "scalaTools Archive" at "https://oss.sonatype.org/content/groups/scala-tools"
+  val mavenOrgRepo = "Maven.Org Repository" at "http://repo1.maven.org/maven2/org"
 }
 
 object Dependencies {
@@ -45,7 +48,7 @@ object RubberCubeBuild extends Build {
     "rubbercube",
     file("."),
     settings = buildSettings ++ Seq(
-      resolvers += snapshotsRepo,
+      resolvers ++= Seq(sonatypeSnaps, sonatypeRels, sonatypeSTArch, mavenOrgRepo),
       libraryDependencies ++= Seq(
         elasticSearch, config, scalatest, specs2, slf4j, lift_json,
         casbahCore, casbahQuery, casbahCommons
