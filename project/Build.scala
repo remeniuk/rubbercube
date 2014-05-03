@@ -45,6 +45,7 @@ object RubberCubeBuild extends Build {
     "rubbercube",
     file("."),
     settings = buildSettings ++ Seq(
+      resolvers += snapshotsRepo,
       libraryDependencies ++= Seq(
         elasticSearch, config, scalatest, specs2, slf4j, lift_json,
         casbahCore, casbahQuery, casbahCommons
