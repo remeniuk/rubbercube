@@ -7,4 +7,4 @@ Cubes over ElasticSearch. Aggregation library for BI
 
     resolvers += "rubbercube" at "https://bokland.github.io/rubbercube"
 
-    libraryDependencies += "com.bokland.rubbercube" %% "rubbercube" % "0.1-SNAPSHOT"
+    libraryDependencies += "com.bokland" %% "rubbercube" % "0.2-SNAPSHOT"
