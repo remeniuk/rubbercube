@@ -1,6 +1,6 @@
 package com.bokland.rubbercube.filter
 
-import com.bokland.rubbercube.{SequenceValue, DimensionValue, Dimension}
+import com.bokland.rubbercube.{StringValue, SequenceValue, DimensionValue, Dimension}
 
 /**
  * Created by remeniuk on 5/1/14.
@@ -19,8 +19,11 @@ case class neql(dimension: Dimension, value: DimensionValue) extends Filter with
 
 case class in(dimension: Dimension, value: DimensionValue) extends Filter with SingleDimension
 
+case class script(value: StringValue, cubeId: Option[String] = None) extends Filter
+
 case class sequence(dimension: Dimension, value: SequenceValue) extends Filter with SingleDimension
 
 case class and(filters: Filter*) extends Filter with MultiDimensional
 
 case class or(filters: Filter*) extends Filter with MultiDimensional
+

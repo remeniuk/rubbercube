@@ -30,4 +30,4 @@ case class StringValue(value: String) extends DimensionValue
 
 case class DateValue(value: Date) extends DimensionValue
 
-case class SequenceValue(value: Seq[String]*) extends DimensionValue
+case class SequenceValue(value: Seq[String]) extends DimensionValue

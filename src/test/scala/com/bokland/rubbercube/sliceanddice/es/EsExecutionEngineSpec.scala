@@ -5,10 +5,22 @@ import com.bokland.rubbercube.sliceanddice.{LeftJoin, RequestResult, SliceAndDic
 import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
-import com.bokland.rubbercube.{CategoryAggregation, DateAggregationType, DateAggregation, Dimension}
+import com.bokland.rubbercube._
 import com.bokland.rubbercube.measure._
 import com.bokland.rubbercube.filter._
 import com.bokland.rubbercube.measure.MeasureReference
+import com.bokland.rubbercube.filter.eql
+import com.bokland.rubbercube.sliceanddice.SliceAndDice
+import com.bokland.rubbercube.sliceanddice.LeftJoin
+import com.bokland.rubbercube.filter.in
+import com.bokland.rubbercube.measure.Sum
+import com.bokland.rubbercube.DateAggregation
+import com.bokland.rubbercube.Dimension
+import com.bokland.rubbercube.filter.script
+import com.bokland.rubbercube.measure.Div
+import scala.Some
+import com.bokland.rubbercube.measure.MeasureReference
+import com.bokland.rubbercube.measure.CountDistinct
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -150,6 +162,20 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
         Map("date" -> "2014-01-02T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 6.98, "arppdau" -> 3.49),
         Map("date" -> "2014-01-03T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 99.99, "arppdau" -> 49.995)
       )))
+  }
+
+  "Revenue from users that have payed in their registration date" in {
+    val firstDepositDateFilter = script(StringValue("doc['date'].value/86400000 == doc['registration_date'].value/86400000"))
+
+    val revenuePerDay = SliceAndDice("purchase",
+      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
+      Seq(Sum(Dimension("amount"), alias = Some("daily_revenue"))),
+      Seq(firstDepositDateFilter))
+
+    val result = engine.execute(revenuePerDay)
+    result should be(
+      RequestResult(Seq(Map("date" -> "2014-01-01T00:00:00.000Z", "daily_revenue" -> 19.99)),Some("purchase"))
+    )
   }
 
 }

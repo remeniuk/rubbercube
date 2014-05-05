@@ -1,10 +1,11 @@
 package com.bokland.rubbercube.marshaller.es
 
 import com.bokland.rubbercube.filter._
-import org.elasticsearch.index.query.QueryBuilder
+import org.elasticsearch.index.query.{QueryBuilders, FilterBuilders, QueryBuilder}
 import org.elasticsearch.index.query.QueryBuilders._
 import com.bokland.rubbercube.filter.Filter
 import com.bokland.rubbercube.marshaller.Marshaller
+import com.bokland.rubbercube.StringValue
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -50,18 +51,18 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
         }
         subQuery
 
+      case script(StringValue(value), _) =>
+        QueryBuilders.filteredQuery(matchAllQuery(), FilterBuilders.scriptFilter(value))
+
       case p: sequence =>
         if (p.value.value.forall(_.forall(_ == ""))) null
         else {
 
           val parentQuery = spanOrQuery()
-          p.value.value.foreach {
-            sequence =>
-              parentQuery.clause((spanNearQuery().slop(MAX_SLOP).inOrder(true) /: sequence) {
-                (query, regexTerm) =>
-                  query.clause(spanMultiTermQueryBuilder(regexpQuery(p.dimension.name, regexTerm)))
-              })
-          }
+          parentQuery.clause((spanNearQuery().slop(MAX_SLOP).inOrder(true) /: p.value.value) {
+            (query, regexTerm) =>
+              query.clause(spanMultiTermQueryBuilder(regexpQuery(p.dimension.name, regexTerm)))
+          })
 
           parentQuery
         }

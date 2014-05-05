@@ -4,6 +4,7 @@ import com.bokland.rubbercube.filter._
 import com.mongodb.casbah.commons.MongoDBObject
 import com.bokland.rubbercube.marshaller.mongo.{MongoMarshaller, DimensionMongoMarshaller}
 import com.mongodb.casbah.query.Imports._
+import com.bokland.rubbercube.{StringValue, SequenceValue}
 
 /**
  * Created by remeniuk on 5/1/14.
@@ -12,6 +13,12 @@ object FilterMongoMarshaller extends MongoMarshaller[Filter] {
 
   def marshal(obj: Filter): DBObject = {
     obj match {
+      case script(value, cubeId) =>
+        val builder = MongoDBObject.newBuilder ++= Seq("operation" -> "script",
+          "value" -> value.value)
+        cubeId.foreach(cid => builder += "cubeId" -> cid)
+        builder.result()
+
       case filter: SingleDimension =>
         MongoDBObject("operation" -> filter.getClass.getSimpleName,
           "dimension" -> DimensionMongoMarshaller.marshal(filter.dimension),
@@ -34,6 +41,9 @@ object FilterMongoMarshaller extends MongoMarshaller[Filter] {
       case "gte" => gte(DimensionMongoMarshaller.unmarshal(obj.as[DBObject]("dimension")), obj.as[Any]("value"))
       case "lt" => lt(DimensionMongoMarshaller.unmarshal(obj.as[DBObject]("dimension")), obj.as[Any]("value"))
       case "lte" => lte(DimensionMongoMarshaller.unmarshal(obj.as[DBObject]("dimension")), obj.as[Any]("value"))
+      case "sequence" => sequence(DimensionMongoMarshaller.unmarshal(obj.as[DBObject]("dimension")),
+        SequenceValue(obj.as[MongoDBList]("value").map(_.toString)))
+      case "script" => script(StringValue(obj.as[String]("value")), obj.getAs[String]("cubeId"))
     }
   }
 
