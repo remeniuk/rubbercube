@@ -4,8 +4,9 @@ import sbt.Keys._
 object BuildSettings {
 
   val buildSettings = Defaults.defaultSettings ++ Seq(
-    organization := "com.bokland.rubbercube",
-    scalaVersion := "2.10.4"
+    organization := "com.bokland",
+    scalaVersion := "2.10.4",
+    version := "0.2-SNAPSHOT"
   )
 
 }
