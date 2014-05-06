@@ -32,20 +32,20 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
         parentQuery
 
       case f: gt =>
-        rangeQuery(f.dimension.name).from(f.value).includeLower(false)
+        rangeQuery(f.dimension.name).from(f.value.value).includeLower(false)
 
       case f: gte =>
-        rangeQuery(f.dimension.name).from(f.value).includeLower(true)
+        rangeQuery(f.dimension.name).from(f.value.value).includeLower(true)
 
       case f: lt =>
-        rangeQuery(f.dimension.name).to(f.value).includeLower(false)
+        rangeQuery(f.dimension.name).to(f.value.value).includeLower(false)
 
       case f: lte =>
-        rangeQuery(f.dimension.name).to(f.value).includeLower(true)
+        rangeQuery(f.dimension.name).to(f.value.value).includeLower(true)
 
       case f: in =>
         val subQuery = boolQuery()
-        f.value.asInstanceOf[Iterable[Any]].foreach {
+        f.value.value.asInstanceOf[Iterable[Any]].foreach {
           value =>
             subQuery.must(matchQuery(f.dimension.name, value))
         }
@@ -68,7 +68,7 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
         }
 
       case other: SingleDimension =>
-        matchQuery(other.dimension.name, other.value)
+        matchQuery(other.dimension.name, other.value.value)
     }
   }
 

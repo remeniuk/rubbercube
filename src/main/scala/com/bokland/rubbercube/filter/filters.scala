@@ -17,7 +17,7 @@ case class eql(dimension: Dimension, value: DimensionValue) extends Filter with 
 
 case class neql(dimension: Dimension, value: DimensionValue) extends Filter with SingleDimension
 
-case class in(dimension: Dimension, value: DimensionValue) extends Filter with SingleDimension
+case class in(dimension: Dimension, value: SequenceValue) extends Filter with SingleDimension
 
 case class script(value: StringValue, cubeId: Option[String] = None) extends Filter
 
