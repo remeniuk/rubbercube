@@ -10,6 +10,7 @@ import com.bokland.rubbercube.DateAggregation
 import com.bokland.rubbercube.measure.Count
 import com.bokland.rubbercube.measure.CountDistinct
 import com.bokland.rubbercube.measure.Avg
+import com.bokland.rubbercube.measure.Categories
 import com.bokland.rubbercube.DateAggregationType.DateAggregationType
 import com.bokland.rubbercube.DateAggregationType
 
@@ -20,29 +21,37 @@ import com.bokland.rubbercube.DateAggregationType
 object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggregationBuilder] {
 
   def buildAggregationQuery(measure: Measure, aggregations: Seq[Aggregation]) = {
-    val (aggregationQuery, lowestAggregation) = buildQueryCore(aggregations)
+    val (aggregationQuery, lowestAggregation) = if (aggregations.size > 0) buildQueryCore(aggregations) else (null, null)
 
-    measure match {
+    val subAggregation = measure match {
 
       case CountDistinct(userDimension, alias) =>
-        addSubAggregation(lowestAggregation, cardinality(alias.getOrElse(measure.name))
-          .field(userDimension.fieldName))
+        cardinality(alias.getOrElse(measure.name)).field(userDimension.fieldName)
 
       case Count(userDimension, alias) =>
-        addSubAggregation(lowestAggregation, count(alias.getOrElse(measure.name))
-          .field(userDimension.fieldName))
+        count(alias.getOrElse(measure.name)).field(userDimension.fieldName)
 
       case Sum(userDimension, alias) =>
-        addSubAggregation(lowestAggregation, sum(alias.getOrElse(measure.name))
-          .field(userDimension.fieldName))
+        sum(alias.getOrElse(measure.name)).field(userDimension.fieldName)
 
       case Avg(userDimension, alias) =>
-        addSubAggregation(lowestAggregation, avg(alias.getOrElse(measure.name))
-          .field(userDimension.fieldName))
+        avg(alias.getOrElse(measure.name)).field(userDimension.fieldName)
+
+      case Max(userDimension, alias) =>
+        max(alias.getOrElse(measure.name)).field(userDimension.fieldName)
+
+      case Min(userDimension, alias) =>
+        min(alias.getOrElse(measure.name)) .field(userDimension.fieldName)
+
+      case Categories(userDimension, alias) =>
+        terms(alias.getOrElse(measure.name)).field(userDimension.fieldName)
 
     }
 
-    aggregationQuery
+    if(lowestAggregation != null) {
+      addSubAggregation(lowestAggregation, subAggregation)
+      aggregationQuery
+    } else subAggregation
   }
 
   ///////////////////////
@@ -67,11 +76,15 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
 
   private def addSubAggregation(superAgg: AbstractAggregationBuilder,
                                 subAgg: AbstractAggregationBuilder): AbstractAggregationBuilder = {
-    val subAggregationMethod = superAgg.getClass.getMethod("subAggregation",
-      classOf[AbstractAggregationBuilder])
-    subAggregationMethod.invoke(superAgg, subAgg)
+    if (superAgg == null) {
+      subAgg
+    } else {
+      val subAggregationMethod = superAgg.getClass.getMethod("subAggregation",
+        classOf[AbstractAggregationBuilder])
+      subAggregationMethod.invoke(superAgg, subAgg)
 
-    subAgg
+      subAgg
+    }
   }
 
   private def buildQueryCore(aggregations: Seq[Aggregation]):

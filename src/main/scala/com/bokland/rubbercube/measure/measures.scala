@@ -13,6 +13,12 @@ case class Sum(dimension: Dimension, alias: Option[String] = None) extends Measu
 
 case class Avg(dimension: Dimension, alias: Option[String] = None) extends Measure
 
+case class Max(dimension: Dimension, alias: Option[String] = None) extends Measure
+
+case class Min(dimension: Dimension, alias: Option[String] = None) extends Measure
+
+case class Categories(dimension: Dimension, alias: Option[String] = None) extends Measure
+
 case class Div(m1: Measure, m2: Measure, alias: Option[String] = None) extends DerivedMeasure {
 
   val measures: Seq[Measure] = Seq(m1, m2)

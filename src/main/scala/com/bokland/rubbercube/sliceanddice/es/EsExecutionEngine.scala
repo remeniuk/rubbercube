@@ -12,11 +12,14 @@ import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality
 import org.elasticsearch.index.query.QueryBuilders._
 import org.elasticsearch.search.aggregations.metrics.sum.Sum
 import org.elasticsearch.search.aggregations.metrics.avg.Avg
+import org.elasticsearch.search.aggregations.metrics.max.Max
+import org.elasticsearch.search.aggregations.metrics.min.Min
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount
 import EsAggregationQueryBuilder._
 import RequestResult._
 import com.bokland.rubbercube.measure._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
+import scala.collection.JavaConverters._
 
 /**
  * Created by remeniuk on 4/29/14.
@@ -75,6 +78,9 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
       case cardinality: Cardinality => aggregation.getName -> cardinality.getValue
       case sum: Sum => aggregation.getName -> sum.getValue
       case avg: Avg => aggregation.getName -> avg.getValue
+      case max: Max => aggregation.getName -> max.getValue
+      case min: Min => aggregation.getName -> min.getValue
+      case terms: Terms => aggregation.getName -> terms.getBuckets.asScala.map(_.getKey)
       case count: ValueCount => aggregation.getName -> count.getValue
     }
 
@@ -95,7 +101,7 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
           terms.getBuckets.foreach {
             bucket =>
             // if child aggregation is bucket aggregation, drill down
-              if (bucket.getAggregations.forall(isBucketAggregation)) {
+              if (!bucket.getAggregations.isEmpty && bucket.getAggregations.forall(isBucketAggregation)) {
                 bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
               } else {
                 // if child aggregation is category aggregation, build tuple and add it to result

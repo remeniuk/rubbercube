@@ -7,6 +7,14 @@ import com.bokland.rubbercube.DateAggregationType.DateAggregationType
  */
 trait AggregationType
 
+object AggregationType {
+
+  val Category = "category"
+  val Date = "date"
+  val Number = "number"
+
+}
+
 case object CategoryAggregation extends AggregationType
 
 object DateAggregationType extends Enumeration {

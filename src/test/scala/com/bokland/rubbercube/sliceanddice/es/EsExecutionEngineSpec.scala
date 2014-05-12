@@ -86,21 +86,21 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     }
   }
 
-  "Revenue per day per daily cohort" in {
-    val cube = SliceAndDice("purchase",
-      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day),
-        Dimension("registration_date") -> DateAggregation(DateAggregationType.Day)),
-      Seq(Sum(Dimension("amount")), CountDistinct(Dimension("_parent"))))
-
-    engine.execute(cube) should be(
-      RequestResult(List(
-        Map("date" -> "2014-01-02T00:00:00.000Z", "registration_date" -> "2013-02-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 1.99),
-        Map("date" -> "2014-01-01T00:00:00.000Z", "registration_date" -> "2013-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 1.99),
-        Map("date" -> "2014-01-02T00:00:00.000Z", "registration_date" -> "2013-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 4.99),
-        Map("date" -> "2014-01-03T00:00:00.000Z", "registration_date" -> "2013-02-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 99.99),
-        Map("date" -> "2014-01-01T00:00:00.000Z", "registration_date" -> "2013-02-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 19.99)
-      ), Some("purchase")))
-  }
+//  "Revenue per day per daily cohort" in {
+//    val cube = SliceAndDice("purchase",
+//      Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day),
+//        Dimension("registration_date") -> DateAggregation(DateAggregationType.Day)),
+//      Seq(Sum(Dimension("amount")), CountDistinct(Dimension("_parent"))))
+//
+//    engine.execute(cube) should be(
+//      RequestResult(List(
+//        Map("date" -> "2014-01-02T00:00:00.000Z", "registration_date" -> "2013-02-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 1.99),
+//        Map("date" -> "2014-01-01T00:00:00.000Z", "registration_date" -> "2013-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 1.99),
+//        Map("date" -> "2014-01-02T00:00:00.000Z", "registration_date" -> "2013-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 4.99),
+//        Map("date" -> "2014-01-03T00:00:00.000Z", "registration_date" -> "2013-02-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 99.99),
+//        Map("date" -> "2014-01-01T00:00:00.000Z", "registration_date" -> "2013-02-01T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 19.99)
+//      ), Some("purchase")))
+//  }
 
   "Revenue per day" in {
     val cube = SliceAndDice("purchase",
