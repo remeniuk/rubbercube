@@ -30,7 +30,8 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
     import sliceAndDice._
 
     // return no documents
-    val search = client.prepareSearch(index).setTypes(sliceAndDice.id).setSize(0)
+    val search = client.prepareSearch(index).setTypes(sliceAndDice.id)
+      .setSize(sliceAndDice.size).setFrom(sliceAndDice.from)
 
     // add aggregations
     measures.foreach {
@@ -124,11 +125,17 @@ class EsExecutionEngine(client: TransportClient, index: String) extends Executio
               }
           }
 
+        case aggregation: Aggregation =>
+          resultSet = resultSet + (tuple + parseCategoryAggregationResult(aggregation))
       }
     }
 
     RequestResult(
-      if (result.getAggregations.size == 1) {
+      if(result.getAggregations == null) {
+        result.getHits.getHits.map {
+          hit => hit.getSource.toMap
+        }
+      } else if (result.getAggregations.size == 1) {
         parseResults(result.getAggregations.head)
         resultSet.toSeq
       } else {

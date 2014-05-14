@@ -178,4 +178,23 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     )
   }
 
+  "Total amount of purchases" in {
+    val revenuePerDay = SliceAndDice("purchase",
+      Nil,
+      Seq(Sum(Dimension("amount"), alias = Some("daily_revenue")),
+        CountDistinct(Dimension("_parent"), alias = Some("payers"))))
+
+    val result = engine.execute(revenuePerDay)
+    result should be(
+    RequestResult(List(Map("payers" -> 2, "daily_revenue" -> 128.95)),Some("purchase"))
+    )
+  }
+
+  "List of purchases" in {
+    val purchases = SliceAndDice("purchase", size = 10, from = 0)
+
+    val result = engine.execute(purchases)
+    result.resultSet.size should be(5)
+  }
+
 }
