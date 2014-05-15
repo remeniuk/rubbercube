@@ -2,7 +2,6 @@ package com.bokland.rubbercube.sliceanddice.es
 
 import org.elasticsearch.action.search.SearchRequestBuilder
 import com.bokland.rubbercube.sliceanddice.{Mapping, RequestResult, SliceAndDice, ExecutionEngine}
-import org.elasticsearch.client.transport.TransportClient
 import com.bokland.rubbercube.marshaller.es.EsFilterMarshaller
 import com.bokland.rubbercube.measure.es.EsAggregationQueryBuilder
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
@@ -20,11 +19,12 @@ import RequestResult._
 import com.bokland.rubbercube.measure._
 import org.elasticsearch.search.aggregations.bucket.terms.Terms
 import scala.collection.JavaConverters._
+import org.elasticsearch.client.Client
 
 /**
  * Created by remeniuk on 4/29/14.
  */
-class EsExecutionEngine(client: TransportClient, index: String) extends ExecutionEngine[SearchRequestBuilder] {
+class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[SearchRequestBuilder] {
 
   def buildRequest(sliceAndDice: SliceAndDice): SearchRequestBuilder = {
     import sliceAndDice._
