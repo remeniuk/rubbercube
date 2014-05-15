@@ -14,3 +14,5 @@ services:
   - elasticsearch
 before_script:
   curl https://raw.githubusercontent.com/bokland/rubbercube/master/test/create_test_index.sh | bash
+notifications:
+  slack: viaden:pApDEIWI5hv2RlO06UkvxQQu
