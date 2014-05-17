@@ -8,7 +8,7 @@ import java.text.SimpleDateFormat
 /**
  * Created by remeniuk on 5/6/14.
  */
-object FilterMapUnmarshaller extends Unmarshaller[Map[String, List[String]], Filter] {
+object FilterMapUnmarshaller extends Unmarshaller[Map[String, Seq[String]], Filter] {
 
   private val RangeFilter = "[_][0][]"
   private val CategoryFilter = "[_][]"
@@ -21,7 +21,7 @@ object FilterMapUnmarshaller extends Unmarshaller[Map[String, List[String]], Fil
 
   private[map] val DateFormat = new SimpleDateFormat("yyyy-mm-dd")
 
-  def unmarshal(obj: Map[String, List[String]]): Filter = {
+  def unmarshal(obj: Map[String, Seq[String]]): Filter = {
     val filters: Iterable[Filter] = obj map {
       case (key, values) if key.contains(RangeFilter) && values.forall(v => NumberRegex.pattern.matcher(v).matches) =>
         val fieldName = key.replaceAll(RangeFilterEscaped, "")
