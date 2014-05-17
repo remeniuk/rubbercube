@@ -38,7 +38,9 @@ object FilterMapUnmarshaller extends Unmarshaller[Map[String, Seq[String]], Filt
         in(Dimension(fieldName), SequenceValue(values))
     }
 
-    if(filters.size == 1) filters.head else and(filters.toSeq:_*)
+    if(filters.size == 1) filters.head
+    else if(filters.isEmpty) EmptyFilter
+    else and(filters.toSeq:_*)
   }
 
   def fromURL(url: String, paramSeparator: String = "~") = {
