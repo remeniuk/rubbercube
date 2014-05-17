@@ -12,4 +12,13 @@ class RequestResultTest extends WordSpec with ShouldMatchers with BeforeAndAfter
       .flatResultSet should be(List(Map("l1" -> 1, "l2.l2" -> 2, "l2.l3.l3" -> 3)))
   }
 
+  "All keys from result set are loaded" in {
+    RequestResult(Seq(Map("a" -> 1), Map("b" -> 2))).allKeys should be (Seq("a", "b"))
+  }
+
+  "Inner sequence of documents is flattened" in {
+    RequestResult(Seq(Map("a" -> Map("b" -> Seq(Map("c" -> 1, "d" -> 2), Map("c" -> 3))))))
+    .flatResultSet should be(List(Map("a.b.c" -> Seq(1, 3), "a.b.d" -> 2)))
+  }
+
 }
