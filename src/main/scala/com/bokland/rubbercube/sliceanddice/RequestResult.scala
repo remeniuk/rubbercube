@@ -36,8 +36,6 @@ case class RequestResult(resultSet: Seq[Map[String, Any]], cubeId: Option[String
 
       case (key, value: Seq[Any]) => Map(s"$prefixWithDelimiter$key" -> value.distinct)
 
-      case (key, value) => Map(s"$prefixWithDelimiter$key" -> value)
-
       // Java cases
       case (key, value: JMap[String, Any]) =>
         flattenMap(value.asScala.toMap, Some(s"$prefixWithDelimiter$key"))
@@ -52,6 +50,8 @@ case class RequestResult(resultSet: Seq[Map[String, Any]], cubeId: Option[String
 
       case (key, value: JList[Any]) =>
         Map(s"$prefixWithDelimiter$key" -> value.asScala.distinct)
+
+      case (key, value) => Map(s"$prefixWithDelimiter$key" -> value)
     }
   }
 
