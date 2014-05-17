@@ -27,3 +27,7 @@ trait MultiDimensional {
 
   def cubeId: Option[String] = filters.head.cubeId
 }
+
+case object EmptyFilter extends Filter {
+  def cubeId: Option[String] = ???
+}
