@@ -26,30 +26,37 @@ case class RequestResult(resultSet: Seq[Map[String, Any]], cubeId: Option[String
       case (key, value: Map[String, Any]) =>
         flattenMap(value, Some(s"$prefixWithDelimiter$key"))
 
-      case (key, value: Seq[Map[String, Any]]) =>
-        val res = value.map(flattenMap(_, Some(s"$prefixWithDelimiter$key")))
-        res.flatMap(_.keys).map {
-          key =>
-            val v = res.flatMap(_.get(key))
-            key -> (if(v.size == 1) v.head else v)
-        }
+      case (key, value: Seq[Any]) =>
+        value.head match {
+          case _: Map[String, Any] =>
+            val res = value.map(tuple => flattenMap(tuple.asInstanceOf[Map[String, Any]], Some(s"$prefixWithDelimiter$key")))
+            res.flatMap(_.keys).map {
+              key =>
+                val v = res.flatMap(_.get(key))
+                key -> (if(v.size == 1) v.head else v)
+            }
 
-      case (key, value: Seq[Any]) => Map(s"$prefixWithDelimiter$key" -> value.distinct)
+          case _ =>
+            Map(s"$prefixWithDelimiter$key" -> value.distinct)
+        }
 
       // Java cases
       case (key, value: JMap[String, Any]) =>
         flattenMap(value.asScala.toMap, Some(s"$prefixWithDelimiter$key"))
 
-      case (key, value: JList[JMap[String, Any]]) =>
-        val res = value.asScala.map(tuple => flattenMap(tuple.asScala.toMap, Some(s"$prefixWithDelimiter$key")))
-        res.flatMap(_.keys).map {
-          key =>
-            val v = res.flatMap(_.get(key))
-            key -> (if(v.size == 1) v.head else v)
-        }
-
       case (key, value: JList[Any]) =>
-        Map(s"$prefixWithDelimiter$key" -> value.asScala.distinct)
+        value.asScala.head match {
+          case _: JMap[String, Any] =>
+            val res = value.asScala.map(tuple => flattenMap(tuple.asInstanceOf[JMap[String, Any]].asScala.toMap,
+              Some(s"$prefixWithDelimiter$key")))
+            res.flatMap(_.keys).map {
+              key =>
+                val v = res.flatMap(_.get(key))
+                key -> (if(v.size == 1) v.head else v)
+            }
+          case _ =>
+            Map(s"$prefixWithDelimiter$key" -> value.asScala.distinct)
+        }
 
       case (key, value) => Map(s"$prefixWithDelimiter$key" -> value)
     }
