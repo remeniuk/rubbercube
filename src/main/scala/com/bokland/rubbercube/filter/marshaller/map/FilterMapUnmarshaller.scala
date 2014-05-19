@@ -19,7 +19,7 @@ object FilterMapUnmarshaller extends Unmarshaller[Map[String, Seq[String]], Filt
   private val NumberRegex = "([0-9\\.]+)".r
   private val DateRegex = "[0-9]{4}-[0-9]{2}-[0-9]{2}".r
 
-  private[map] val DateFormat = new SimpleDateFormat("yyyy-mm-dd")
+  private[map] val DateFormat = new SimpleDateFormat("yyyy-MM-dd")
 
   def unmarshal(obj: Map[String, Seq[String]]): Filter = {
     val filters: Iterable[Filter] = obj map {
