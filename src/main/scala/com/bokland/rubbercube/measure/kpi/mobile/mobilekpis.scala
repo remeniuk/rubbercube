@@ -19,7 +19,6 @@ import com.bokland.rubbercube.measure.Avg
  */
 case object Measures {
 
-  val _idField = "_id"
   val _parentField = "_parent"
 
   val ActiveUsers = "active_users"
@@ -55,10 +54,10 @@ case class ActivePayingUsers(purchaseCube: String, alias: String = Measures.Acti
 
 }
 
-case class UsersCount(userCube: String, alias: String = Measures.UsersCount) extends KPI {
+case class UsersCount(userCube: String, idField: String, alias: String = Measures.UsersCount) extends KPI {
 
   def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
-    SliceAndDice(userCube, aggregations, Seq(Count(Dimension(Measures._idField),
+    SliceAndDice(userCube, aggregations, Seq(Count(Dimension(idField),
       alias = Some(alias))), filters = filters)
 
 }
@@ -80,18 +79,18 @@ case class TotalRevenue(purchaseCube: String, purchaseAmountField: String, alias
 
 }
 
-case class PurchaseCount(purchaseCube: String, alias: String = Measures.PurchaseCount) extends KPI {
+case class PurchaseCount(purchaseCube: String, idField: String, alias: String = Measures.PurchaseCount) extends KPI {
 
   def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
-    SliceAndDice(purchaseCube, aggregations, Seq(Count(Dimension(Measures._idField),
+    SliceAndDice(purchaseCube, aggregations, Seq(Count(Dimension(idField),
       alias = Some(alias))), filters = filters)
 
 }
 
-case class SessionsCount(sessionCube: String, alias: String = Measures.SessionsCount) extends KPI {
+case class SessionsCount(sessionCube: String, idField: String, alias: String = Measures.SessionsCount) extends KPI {
 
   def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
-    SliceAndDice(sessionCube, aggregations, Seq(Count(Dimension(Measures._idField),
+    SliceAndDice(sessionCube, aggregations, Seq(Count(Dimension(idField),
       alias = Some(alias))), filters = filters)
 
 }
@@ -118,18 +117,18 @@ case class PayersPercent(sessionCube: String, purchaseCube: String, sessionDateF
 
 }
 
-case class SessionsPerUsers(sessionCube: String, alias: String = Measures.SessionsPerUsers) extends KPI {
+case class SessionsPerUsers(sessionCube: String, idField: String, alias: String = Measures.SessionsPerUsers) extends KPI {
 
   def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
-    SliceAndDice(sessionCube, aggregations, Seq(Div(Count(Dimension(Measures._idField)), CountDistinct(Dimension(Measures._parentField)),
+    SliceAndDice(sessionCube, aggregations, Seq(Div(Count(Dimension(idField)), CountDistinct(Dimension(Measures._parentField)),
       alias = Some(alias))), filters = filters)
 
 }
 
-case class PurchasesPerUsers(purchaseCube: String, alias: String = Measures.PurchasesPerUsers) extends KPI {
+case class PurchasesPerUsers(purchaseCube: String, idField: String, alias: String = Measures.PurchasesPerUsers) extends KPI {
 
   def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
-    SliceAndDice(purchaseCube, aggregations, Seq(Div(Count(Dimension(Measures._idField)), CountDistinct(Dimension(Measures._parentField)),
+    SliceAndDice(purchaseCube, aggregations, Seq(Div(Count(Dimension(idField)), CountDistinct(Dimension(Measures._parentField)),
       alias = Some(alias))), filters = filters)
 
 }
@@ -156,10 +155,10 @@ case class RevenuePerUser(sessionCube: String, purchaseCube: String, sessionDate
 
 }
 
-case class RevenuePerTransaction(purchaseCube: String, purchaseAmountField: String, alias: String = Measures.RevenuePerTransaction) extends KPI {
+case class RevenuePerTransaction(purchaseCube: String, idField: String, purchaseAmountField: String, alias: String = Measures.RevenuePerTransaction) extends KPI {
 
   def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
-    SliceAndDice(purchaseCube, aggregations, Seq(Div(Sum(Dimension(purchaseAmountField)), Count(Dimension(Measures._idField)),
+    SliceAndDice(purchaseCube, aggregations, Seq(Div(Sum(Dimension(purchaseAmountField)), Count(Dimension(idField)),
       alias = Some(alias))), filters = filters)
 
 }
