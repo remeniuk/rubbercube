@@ -48,9 +48,9 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
       engine.execute(sliceAndDice) should be(
         RequestResult(List(
-          Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 2),
-          Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1),
-          Map("date" -> "2014-01-03T00:00:00.000Z", "countdistinct-_parent" -> 1)
+          Map("date" -> 1388534400000l, "countdistinct-_parent" -> 2),
+          Map("date" -> 1388620800000l, "countdistinct-_parent" -> 1),
+          Map("date" -> 1388707200000l, "countdistinct-_parent" -> 1)
         ), Some("purchase")))
     }
 
@@ -63,8 +63,8 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
       engine.execute(sliceAndDice) should be(
         RequestResult(List(
-          Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1),
-          Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1)
+          Map("date" -> 1388534400000l, "countdistinct-_parent" -> 1),
+          Map("date" -> 1388620800000l, "countdistinct-_parent" -> 1)
         ), Some("purchase"))
       )
     }
@@ -79,8 +79,8 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
       engine.execute(sliceAndDice) should be(
         RequestResult(List(
-          Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 1),
-          Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1)
+          Map("date" -> 1388534400000l, "countdistinct-_parent" -> 1),
+          Map("date" -> 1388620800000l, "countdistinct-_parent" -> 1)
         ), Some("purchase"))
       )
     }
@@ -109,9 +109,9 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
     engine.execute(cube) should be(
       RequestResult(List(
-        Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 2, "sum-amount" -> 21.979999999999997),
-        Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 6.98),
-        Map("date" -> "2014-01-03T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 99.99)
+        Map("date" -> 1388534400000l, "countdistinct-_parent" -> 2, "sum-amount" -> 21.979999999999997),
+        Map("date" -> 1388620800000l, "countdistinct-_parent" -> 1, "sum-amount" -> 6.98),
+        Map("date" -> 1388707200000l, "countdistinct-_parent" -> 1, "sum-amount" -> 99.99)
       ), Some("purchase")))
   }
 
@@ -122,9 +122,9 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
     engine.execute(cube) should be(
       RequestResult(List(
-        Map("date" -> "2014-01-01T00:00:00.000Z", "countdistinct-_parent" -> 2, "sum-amount" -> 21.979999999999997, "div-sum-amount-countdistinct-_parent" -> 10.989999999999998),
-        Map("date" -> "2014-01-02T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 6.98, "div-sum-amount-countdistinct-_parent" -> 6.98),
-        Map("date" -> "2014-01-03T00:00:00.000Z", "countdistinct-_parent" -> 1, "sum-amount" -> 99.99, "div-sum-amount-countdistinct-_parent" -> 99.99)
+        Map("date" -> 1388534400000l, "countdistinct-_parent" -> 2, "sum-amount" -> 21.979999999999997, "div-sum-amount-countdistinct-_parent" -> 10.989999999999998),
+        Map("date" -> 1388620800000l, "countdistinct-_parent" -> 1, "sum-amount" -> 6.98, "div-sum-amount-countdistinct-_parent" -> 6.98),
+        Map("date" -> 1388707200000l, "countdistinct-_parent" -> 1, "sum-amount" -> 99.99, "div-sum-amount-countdistinct-_parent" -> 99.99)
       ), Some("purchase")))
   }
 
@@ -158,9 +158,9 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
     result should be(
       RequestResult(List(
-        Map("date" -> "2014-01-01T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 21.979999999999997, "arppdau" -> 10.989999999999998),
-        Map("date" -> "2014-01-02T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 6.98, "arppdau" -> 3.49),
-        Map("date" -> "2014-01-03T00:00:00.000Z", "dau" -> 2, "daily_revenue" -> 99.99, "arppdau" -> 49.995)
+        Map("date" -> 1388534400000l, "dau" -> 2, "daily_revenue" -> 21.979999999999997, "arppdau" -> 10.989999999999998),
+        Map("date" -> 1388620800000l, "dau" -> 2, "daily_revenue" -> 6.98, "arppdau" -> 3.49),
+        Map("date" -> 1388707200000l, "dau" -> 2, "daily_revenue" -> 99.99, "arppdau" -> 49.995)
       )))
   }
 
@@ -174,7 +174,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
 
     val result = engine.execute(revenuePerDay)
     result should be(
-      RequestResult(Seq(Map("date" -> "2014-01-01T00:00:00.000Z", "daily_revenue" -> 19.99)),Some("purchase"))
+      RequestResult(Seq(Map("date" -> 1388534400000l, "daily_revenue" -> 19.99)),Some("purchase"))
     )
   }
 

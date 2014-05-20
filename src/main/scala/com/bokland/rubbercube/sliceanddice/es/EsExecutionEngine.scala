@@ -117,10 +117,10 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
             bucket =>
             // if child aggregation is bucket aggregation, drill down
               if (bucket.getAggregations.forall(isBucketAggregation)) {
-                bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
+                bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKeyAsNumber)))
               } else {
                 // if child aggregation is category aggregation, build tuple and add it to result
-                resultSet = resultSet + ((tuple + (aggregation.getName -> bucket.getKey)) ++
+                resultSet = resultSet + ((tuple + (aggregation.getName -> bucket.getKeyAsNumber)) ++
                   bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
               }
           }
