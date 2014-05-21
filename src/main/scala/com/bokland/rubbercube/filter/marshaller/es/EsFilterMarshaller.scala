@@ -32,22 +32,22 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
         parentQuery
 
       case f: gt =>
-        rangeQuery(f.dimension.name).from(f.value.value).includeLower(false)
+        rangeQuery(f.dimension.fieldName).from(f.value.value).includeLower(false)
 
       case f: gte =>
-        rangeQuery(f.dimension.name).from(f.value.value).includeLower(true)
+        rangeQuery(f.dimension.fieldName).from(f.value.value).includeLower(true)
 
       case f: lt =>
-        rangeQuery(f.dimension.name).to(f.value.value).includeLower(false)
+        rangeQuery(f.dimension.fieldName).to(f.value.value).includeLower(false)
 
       case f: lte =>
-        rangeQuery(f.dimension.name).to(f.value.value).includeLower(true)
+        rangeQuery(f.dimension.fieldName).to(f.value.value).includeLower(true)
 
       case f: in =>
         val subQuery = boolQuery()
         f.value.value.asInstanceOf[Iterable[Any]].foreach {
           value =>
-            subQuery.must(matchQuery(f.dimension.name, value))
+            subQuery.must(matchQuery(f.dimension.fieldName, value))
         }
         subQuery
 
@@ -61,14 +61,14 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
           val parentQuery = spanOrQuery()
           parentQuery.clause((spanNearQuery().slop(MAX_SLOP).inOrder(true) /: p.value.value) {
             (query, regexTerm) =>
-              query.clause(spanMultiTermQueryBuilder(regexpQuery(p.dimension.name, regexTerm)))
+              query.clause(spanMultiTermQueryBuilder(regexpQuery(p.dimension.fieldName, regexTerm)))
           })
 
           parentQuery
         }
 
       case other: SingleDimension =>
-        matchQuery(other.dimension.name, other.value.value)
+        matchQuery(other.dimension.fieldName, other.value.value)
     }
   }
 

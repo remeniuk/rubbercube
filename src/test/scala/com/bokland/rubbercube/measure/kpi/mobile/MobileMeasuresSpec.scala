@@ -39,9 +39,9 @@ class MobileMeasuresSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
 
     result should be(RequestResult(
       Seq(
-        Map("date" -> "2014-01-01T00:00:00.000Z", "total_revenue" -> 21.979999999999997, "active_users" -> 2, "revenue_per_user" -> 10.989999999999998),
-        Map("date" -> "2014-01-01T00:00:00.000Z", "total_revenue" -> 6.98, "active_users" -> 2, "revenue_per_user" -> 3.49),
-        Map("date" -> "2014-01-01T00:00:00.000Z", "total_revenue" -> 99.99, "active_users" -> 2, "revenue_per_user" -> 49.995)),
+        Map("date" -> 1388534400000l, "total_revenue" -> 21.979999999999997, "active_users" -> 2, "revenue_per_user" -> 10.989999999999998),
+        Map("date" -> 1388534400000l, "total_revenue" -> 6.98, "active_users" -> 2, "revenue_per_user" -> 3.49),
+        Map("date" -> 1388534400000l, "total_revenue" -> 99.99, "active_users" -> 2, "revenue_per_user" -> 49.995)),
       None)
     )
   }
