@@ -47,7 +47,7 @@ object EsFilterMarshaller extends Marshaller[Filter, QueryBuilder] {
         val subQuery = boolQuery()
         f.value.value.asInstanceOf[Iterable[Any]].foreach {
           value =>
-            subQuery.must(matchQuery(f.dimension.fieldName, value))
+            subQuery.should(matchQuery(f.dimension.fieldName, value))
         }
         subQuery
 

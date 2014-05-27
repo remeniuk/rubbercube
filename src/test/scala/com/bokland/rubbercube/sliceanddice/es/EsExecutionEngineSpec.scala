@@ -58,7 +58,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
       val sliceAndDice = SliceAndDice("purchase",
         Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))),
-        Seq(eql(Dimension("country"), "US"), eql(Dimension("gender"), "Female"))
+        Seq(eql(Dimension("country"), "US"), in(Dimension("gender"), SequenceValue(Seq("Female", "Male"))))
       )
 
       engine.execute(sliceAndDice) should be(
