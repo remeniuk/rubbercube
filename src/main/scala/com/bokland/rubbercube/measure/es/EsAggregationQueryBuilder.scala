@@ -20,11 +20,8 @@ import com.bokland.rubbercube.DateAggregationType
 
 object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggregationBuilder] {
 
-  def buildAggregationQuery(measure: Measure, aggregations: Seq[Aggregation]) = {
-    val (aggregationQuery, lowestAggregation) = if (aggregations.size > 0) buildQueryCore(aggregations) else (null, null)
-
-    val subAggregation = measure match {
-
+  def buildAggregationQuery(measure: Measure) = {
+    measure match {
       case CountDistinct(userDimension, alias) =>
         cardinality(alias.getOrElse(measure.name)).field(userDimension.fieldName)
 
@@ -41,17 +38,19 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
         max(alias.getOrElse(measure.name)).field(userDimension.fieldName)
 
       case Min(userDimension, alias) =>
-        min(alias.getOrElse(measure.name)) .field(userDimension.fieldName)
+        min(alias.getOrElse(measure.name)).field(userDimension.fieldName)
 
       case Categories(userDimension, alias) =>
         terms(alias.getOrElse(measure.name)).field(userDimension.fieldName)
-
     }
+  }
 
-    if(lowestAggregation != null) {
-      addSubAggregation(lowestAggregation, subAggregation)
-      aggregationQuery
-    } else subAggregation
+  def buildAggregationQuery(measures: Seq[Measure], aggregations: Seq[Aggregation]) = {
+    val (aggregationQuery, lowestAggregation) = buildQueryCore(aggregations)
+
+    measures.foreach(measure =>
+      addSubAggregation(lowestAggregation, buildAggregationQuery(measure)))
+    aggregationQuery
   }
 
   ///////////////////////

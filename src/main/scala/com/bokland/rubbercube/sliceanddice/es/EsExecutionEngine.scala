@@ -33,17 +33,16 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
     val search = client.prepareSearch(index).setTypes(sliceAndDice.id)
       .setSize(sliceAndDice.size).setFrom(sliceAndDice.from)
 
-    // add aggregations
-    measures.foreach {
-      case derivedMeasure: DerivedMeasure =>
-        derivedMeasure.measures.map {
-          measure =>
-            search.addAggregation(buildAggregationQuery(measure, aggregations))
-        }
 
-      case measure: Measure =>
-        search.addAggregation(buildAggregationQuery(measure, aggregations))
+    // flatten measures (ordinary and derived)
+    val flattenMeasures = measures.flatMap {
+      case derivedMeasure: DerivedMeasure => derivedMeasure.measures
+      case measure: Measure => Seq(measure)
     }
+
+    // transform measures and aggregation to ES aggregations
+    if(aggregations.isEmpty) flattenMeasures.foreach(m => search.addAggregation(buildAggregationQuery(m)))
+    else search.addAggregation(buildAggregationQuery(flattenMeasures, aggregations))
 
     // add filters, if defined
     if (filters.size > 0) {

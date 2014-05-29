@@ -46,4 +46,19 @@ class MobileMeasuresSpec extends WordSpec with ShouldMatchers with BeforeAndAfte
     )
   }
 
+  "Calculate count of sessions per user" in {
+    val query = SessionsPerUsers(
+      sessionCube = "session",
+      idField = "date")
+      .generateQuery(Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)))
+
+    val result = engine.execute(query)
+    result should be(RequestResult(Seq(
+      Map("date" -> 1388534400000l, "count-date" -> 3, "countdistinct-_parent" -> 2, "sessions_per_users" -> 1.5),
+      Map("date" -> 1388620800000l, "count-date" -> 2, "countdistinct-_parent" -> 2, "sessions_per_users" -> 1.0),
+      Map("date" -> 1388707200000l, "count-date" -> 2, "countdistinct-_parent" -> 2, "sessions_per_users" -> 1.0)),
+      Some("session"))
+    )
+  }
+
 }

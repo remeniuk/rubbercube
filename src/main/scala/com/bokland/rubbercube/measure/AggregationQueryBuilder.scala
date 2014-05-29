@@ -7,6 +7,8 @@ import com.bokland.rubbercube.Aggregation
  */
 trait AggregationQueryBuilder[QueryType] {
 
-  def buildAggregationQuery(measure: Measure, aggregations: Seq[Aggregation]): QueryType
+  def buildAggregationQuery(measure: Measure): QueryType
+
+  def buildAggregationQuery(measures: Seq[Measure], aggregations: Seq[Aggregation]): QueryType
 
 }
