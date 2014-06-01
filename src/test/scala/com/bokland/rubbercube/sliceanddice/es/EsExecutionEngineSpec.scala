@@ -58,7 +58,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
       val sliceAndDice = SliceAndDice("purchase",
         Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))),
-        Seq(eql(Dimension("country"), "US"), in(Dimension("gender"), SequenceValue(Seq("Female", "Male"))))
+        Left(Seq(eql(Dimension("country"), "US"), in(Dimension("gender"), SequenceValue(Seq("Female", "Male")))))
       )
 
       engine.execute(sliceAndDice) should be(
@@ -73,7 +73,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
       val sliceAndDice = SliceAndDice("purchase",
         Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
         Seq(CountDistinct(Dimension("_parent"))),
-        Seq(eql(Dimension("country"), "US"), eql(Dimension("source", cubeId = Some("user")), "Organic")),
+        Left(Seq(eql(Dimension("country"), "US"), eql(Dimension("source", cubeId = Some("user")), "Organic"))),
         parentId = Some("user")
       )
 
@@ -170,7 +170,7 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     val revenuePerDay = SliceAndDice("purchase",
       Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),
       Seq(Sum(Dimension("amount"), alias = Some("daily_revenue"))),
-      Seq(firstDepositDateFilter))
+      Left(Seq(firstDepositDateFilter)))
 
     val result = engine.execute(revenuePerDay)
     result should be(

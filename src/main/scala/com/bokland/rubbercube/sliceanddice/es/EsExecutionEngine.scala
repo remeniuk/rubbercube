@@ -41,34 +41,36 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
     }
 
     // transform measures and aggregation to ES aggregations
-    if(aggregations.isEmpty) flattenMeasures.foreach(m => search.addAggregation(buildAggregationQuery(m)))
+    if (aggregations.isEmpty) flattenMeasures.foreach(m => search.addAggregation(buildAggregationQuery(m)))
     else search.addAggregation(buildAggregationQuery(flattenMeasures, aggregations))
 
-    // add filters, if defined
-    if (filters.size > 0) {
+    filter.fold({
+      filters =>
+        if (filters.size > 0) {
 
-      val query = boolQuery()
+          val query = boolQuery()
 
-      // find filters that should be applied to parent document
-      val parentFilters = for {
-        parentCubeId <- sliceAndDice.parentId.toIterable
-        filter <- filters
-        filterCubeId <- filter.cubeId if filterCubeId == parentCubeId
-      } yield filter
+          // find filters that should be applied to parent document
+          val parentFilters = for {
+            parentCubeId <- sliceAndDice.parentId.toIterable
+            filter <- filters
+            filterCubeId <- filter.cubeId if filterCubeId == parentCubeId
+          } yield filter
 
-      filters.toList.diff(parentFilters.toList).foreach {
-        filter => query.must(EsFilterMarshaller.marshal(filter))
-      }
+          filters.toList.diff(parentFilters.toList).foreach {
+            filter => query.must(EsFilterMarshaller.marshal(filter))
+          }
 
-      parentFilters.foreach {
-        filter =>
-          query.must(hasParentQuery(filter.cubeId.get,
-            EsFilterMarshaller.marshal(filter)))
-      }
+          parentFilters.foreach {
+            filter =>
+              query.must(hasParentQuery(filter.cubeId.get,
+                EsFilterMarshaller.marshal(filter)))
+          }
 
-      search.setQuery(query)
+          search.setQuery(query)
 
-    }
+        }
+    }, search.setPostFilter)
 
     search
   }
@@ -100,7 +102,7 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
         case terms: Terms =>
           terms.getBuckets.foreach {
             bucket =>
-            // if child aggregation is bucket aggregation, drill down
+              // if child aggregation is bucket aggregation, drill down
               if (!bucket.getAggregations.isEmpty && bucket.getAggregations.forall(isBucketAggregation)) {
                 bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
               } else {
@@ -114,7 +116,7 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
 
           dateHistogram.getBuckets.foreach {
             bucket =>
-            // if child aggregation is bucket aggregation, drill down
+              // if child aggregation is bucket aggregation, drill down
               if (bucket.getAggregations.forall(isBucketAggregation)) {
                 bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKeyAsNumber)))
               } else {
@@ -130,7 +132,7 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
     }
 
     RequestResult(
-      if(result.getAggregations == null) {
+      if (result.getAggregations == null) {
         result.getHits.getHits.map {
           hit => hit.getSource.toMap
         }

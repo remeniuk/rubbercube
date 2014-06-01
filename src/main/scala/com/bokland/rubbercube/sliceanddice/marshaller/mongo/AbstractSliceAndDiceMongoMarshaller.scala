@@ -22,7 +22,7 @@ object AbstractSliceAndDiceMongoMarshaller extends MongoMarshaller[AbstractSlice
         dbObject += "cube" -> sliceAndDice.id
         dbObject += "aggregations" -> sliceAndDice.aggregations.map(AggregationMongoMarshaller.marshal)
         dbObject += "measures" -> sliceAndDice.measures.map(MeasureMongoMarshaller.marshal)
-        dbObject += "filters" -> sliceAndDice.filters.map(FilterMongoMarshaller.marshal)
+        dbObject += "filters" -> sliceAndDice.filter.left.toSeq.flatten.map(FilterMongoMarshaller.marshal)
         sliceAndDice.parentId.foreach(parentId => dbObject += "parent_id" -> parentId)
 
       case leftJoin: LeftJoin =>
@@ -44,8 +44,8 @@ object AbstractSliceAndDiceMongoMarshaller extends MongoMarshaller[AbstractSlice
             AggregationMongoMarshaller.unmarshal(aggregation.asInstanceOf[DBObject])),
           obj.as[MongoDBList]("measures").map(aggregation =>
             MeasureMongoMarshaller.unmarshal(aggregation.asInstanceOf[DBObject])),
-          obj.as[MongoDBList]("filters").map(aggregation =>
-            FilterMongoMarshaller.unmarshal(aggregation.asInstanceOf[DBObject])),
+          Left(obj.as[MongoDBList]("filters").map(aggregation =>
+            FilterMongoMarshaller.unmarshal(aggregation.asInstanceOf[DBObject]))),
           obj.getAs[String]("parent_id"))
 
       case "leftJoin" =>

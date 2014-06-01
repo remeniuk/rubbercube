@@ -12,6 +12,7 @@ import scala.Some
 import com.bokland.rubbercube.measure.Min
 import com.bokland.rubbercube.measure.Categories
 import java.util.Date
+import org.elasticsearch.index.query.{FilterBuilder, QueryBuilder}
 
 /**
  * Created by remeniuk on 5/11/14.
@@ -21,7 +22,7 @@ trait CubeService[T] {
   val executionEngine: ExecutionEngine[T]
 
   private def numberRange(cubeId: String, dimension: Dimension,
-                          filters: Seq[Filter] = Nil) = {
+                          filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)) = {
     val result = executionEngine.execute(SliceAndDice(cubeId, Nil, Seq(Max(dimension, Some("max")),
       Min(dimension, Some("min"))), filters))
 
@@ -33,7 +34,7 @@ trait CubeService[T] {
   }
 
   def withDefaults(cubeId: String, dimension: Dimension,
-                          filters: Seq[Filter] = Nil): Dimension = {
+                          filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): Dimension = {
     val defaults = dimension.valueType match {
       case Some(AggregationType.Category) =>
         val result = executionEngine.execute(SliceAndDice(cubeId, Nil,

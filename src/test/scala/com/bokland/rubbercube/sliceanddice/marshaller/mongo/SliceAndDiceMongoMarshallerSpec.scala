@@ -15,8 +15,8 @@ class SliceAndDiceMongoMarshallerSpec extends WordSpec with ShouldMatchers with 
   val testQuery = SliceAndDice("purchase",
     Seq(Dimension("date") -> CategoryAggregation, Dimension("platform") -> DateAggregation(DateAggregationType.Day)),
     Seq(Sum(Dimension("amount"), alias = Some("daily_revenue"))),
-    Seq(eql(Dimension("registration_date"), new Date()),
-      gt(Dimension("logins_count"), 1)), Some("user"))
+    Left(Seq(eql(Dimension("registration_date"), new Date()),
+      gt(Dimension("logins_count"), 1))), Some("user"))
 
   val revenuePerDay = SliceAndDice("purchase",
     Seq(Dimension("date") -> DateAggregation(DateAggregationType.Day)),

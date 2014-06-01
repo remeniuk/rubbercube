@@ -2,13 +2,17 @@ package com.bokland.rubbercube.measure.kpi.mobile
 
 import com.bokland.rubbercube.Aggregation
 import com.bokland.rubbercube.measure.kpi.KPI
+import com.bokland.rubbercube.filter.Filter
+import org.elasticsearch.index.query.{FilterBuilder, QueryBuilder}
+import com.bokland.rubbercube.marshaller.es.EsFilterMarshaller
+import org.elasticsearch.index.query.FilterBuilders._
 import com.bokland.rubbercube.sliceanddice.SliceAndDice
 import com.bokland.rubbercube.sliceanddice.LeftJoin
 import com.bokland.rubbercube.measure.Sum
 import com.bokland.rubbercube.Dimension
 import com.bokland.rubbercube.measure.Div
 import scala.Some
-import com.bokland.rubbercube.filter.{Filter, gt}
+import com.bokland.rubbercube.filter.gt
 import com.bokland.rubbercube.measure.MeasureReference
 import com.bokland.rubbercube.measure.Count
 import com.bokland.rubbercube.measure.CountDistinct
@@ -40,73 +44,72 @@ case object Measures {
 
 case class ActiveUsers(sessionCube: String, alias: String = Measures.ActiveUsers) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(sessionCube, aggregations, Seq(CountDistinct(Dimension(Measures._parentField),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class ActivePayingUsers(purchaseCube: String, alias: String = Measures.ActivePayingUsers) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(purchaseCube, aggregations, Seq(CountDistinct(Dimension(Measures._parentField),
-      alias = Some(alias))), filters = filters)
-
-}
-
-case class UsersCount(userCube: String, idField: String, alias: String = Measures.UsersCount) extends KPI {
-
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
-    SliceAndDice(userCube, aggregations, Seq(Count(Dimension(idField),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class ActivePayedUsers(sessionCube: String, purchasesCountField: String,
                             alias: String = Measures.ActivePayedUsers) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(sessionCube, aggregations, Seq(CountDistinct(Dimension(Measures._parentField), alias = Some(alias))),
-      filters :+ gt(Dimension(purchasesCountField), 0))
+      filters match {
+        case Left(f) => Left(f :+ gt(Dimension(purchasesCountField), 0))
+        case Right(f) =>
+          val query = boolFilter()
+          query.must(rangeFilter(purchasesCountField).from(0).includeLower(false))
+          query.must(f)
+          Right(query)
+      })
 
 }
 
 case class TotalRevenue(purchaseCube: String, purchaseAmountField: String, alias: String = Measures.TotalRevenue) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(purchaseCube, aggregations, Seq(Sum(Dimension(purchaseAmountField),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class PurchaseCount(purchaseCube: String, idField: String, alias: String = Measures.PurchaseCount) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(purchaseCube, aggregations, Seq(Count(Dimension(idField),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class SessionsCount(sessionCube: String, idField: String, alias: String = Measures.SessionsCount) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(sessionCube, aggregations, Seq(Count(Dimension(idField),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class AverageSessionLength(sessionCube: String, sessionLengthField: String, alias: String = Measures.AverageSessionLength) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(sessionCube, aggregations, Seq(Avg(Dimension(sessionLengthField),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class PayersPercent(sessionCube: String, purchaseCube: String, sessionDateField: String, purchaseDateField: String,
                          alias: String = Measures.PayersPercent) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): LeftJoin = {
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): LeftJoin = {
     val activePayingUsers = ActivePayingUsers(purchaseCube)
     val activeUsers = ActiveUsers(sessionCube)
 
@@ -119,32 +122,32 @@ case class PayersPercent(sessionCube: String, purchaseCube: String, sessionDateF
 
 case class SessionsPerUsers(sessionCube: String, idField: String, alias: String = Measures.SessionsPerUsers) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(sessionCube, aggregations, Seq(Div(Count(Dimension(idField)), CountDistinct(Dimension(Measures._parentField)),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class PurchasesPerUsers(purchaseCube: String, idField: String, alias: String = Measures.PurchasesPerUsers) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(purchaseCube, aggregations, Seq(Div(Count(Dimension(idField)), CountDistinct(Dimension(Measures._parentField)),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class RevenuePerPayer(purchaseCube: String, purchaseAmountField: String, alias: String = Measures.RevenuePerPayer) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(purchaseCube, aggregations, Seq(Div(Sum(Dimension(purchaseAmountField)), CountDistinct(Dimension(Measures._parentField)),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
 case class RevenuePerUser(sessionCube: String, purchaseCube: String, sessionDateField: String, purchaseDateField: String,
                           purchaseAmountField: String, alias: String = Measures.RevenuePerUser) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): LeftJoin = {
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): LeftJoin = {
     val totalRevenue = TotalRevenue(purchaseCube, purchaseAmountField)
     val activeUsers = ActiveUsers(sessionCube)
 
@@ -157,9 +160,9 @@ case class RevenuePerUser(sessionCube: String, purchaseCube: String, sessionDate
 
 case class RevenuePerTransaction(purchaseCube: String, idField: String, purchaseAmountField: String, alias: String = Measures.RevenuePerTransaction) extends KPI {
 
-  def generateQuery(aggregations: Seq[Aggregation], filters: Seq[Filter] = Nil): SliceAndDice =
+  def generateQuery(aggregations: Seq[Aggregation], filters: Either[Seq[Filter], FilterBuilder] = Left(Nil)): SliceAndDice =
     SliceAndDice(purchaseCube, aggregations, Seq(Div(Sum(Dimension(purchaseAmountField)), Count(Dimension(idField)),
-      alias = Some(alias))), filters = filters)
+      alias = Some(alias))), filter = filters)
 
 }
 
