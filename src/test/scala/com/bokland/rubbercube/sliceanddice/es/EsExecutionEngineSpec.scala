@@ -61,6 +61,8 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
         Left(Seq(eql(Dimension("country"), "US"), in(Dimension("gender"), SequenceValue(Seq("Female", "Male")))))
       )
 
+      println(engine.buildRequest(sliceAndDice))
+
       engine.execute(sliceAndDice) should be(
         RequestResult(List(
           Map("date" -> 1388534400000l, "countdistinct-_parent" -> 1),

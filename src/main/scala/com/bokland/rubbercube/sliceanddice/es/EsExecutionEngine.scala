@@ -70,7 +70,10 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
           search.setQuery(query)
 
         }
-    }, search.setPostFilter)
+    }, {
+      filter =>
+        search.setQuery(filteredQuery(matchAllQuery(), filter))
+    })
 
     search
   }
