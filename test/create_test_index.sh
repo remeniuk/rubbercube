@@ -39,7 +39,7 @@ curl -XPUT localhost:9200/rubbercube/purchase/_mapping -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/purchase/1?parent=1 -d '{
-    "date" : "2014-01-01T00:00:00",
+    "event.date" : "2014-01-01T00:00:00",
     "registration_date" : "2013-01-01T00:00:00",
     "country" : "US",
     "gender" : "Female",    
@@ -47,7 +47,7 @@ curl -XPUT localhost:9200/rubbercube/purchase/1?parent=1 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/purchase/2?parent=1 -d '{
-    "date" : "2014-01-02T00:00:00",
+    "event.date" : "2014-01-02T00:00:00",
     "registration_date" : "2013-01-01T00:00:00",
     "country" : "US",
     "gender" : "Female",    
@@ -55,7 +55,7 @@ curl -XPUT localhost:9200/rubbercube/purchase/2?parent=1 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/purchase/3?parent=2 -d '{
-    "date" : "2014-01-01T00:00:00",
+    "event.date" : "2014-01-01T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "GB",
     "gender" : "Male",    
@@ -63,7 +63,7 @@ curl -XPUT localhost:9200/rubbercube/purchase/3?parent=2 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/purchase/4?parent=2 -d '{
-    "date" : "2014-01-03T00:00:00",
+    "event.date" : "2014-01-03T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "GB",
     "gender" : "Male",    
@@ -71,7 +71,7 @@ curl -XPUT localhost:9200/rubbercube/purchase/4?parent=2 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/purchase/5?parent=1 -d '{
-    "date" : "2014-01-02T00:00:00",
+    "event.date" : "2014-01-02T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "US",
     "gender" : "Female",    
@@ -79,7 +79,7 @@ curl -XPUT localhost:9200/rubbercube/purchase/5?parent=1 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/session/1?parent=1 -d '{
-    "date" : "2014-01-01T00:00:00",
+    "event.date" : "2014-01-01T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "US",
     "gender" : "Female",
@@ -87,7 +87,7 @@ curl -XPUT localhost:9200/rubbercube/session/1?parent=1 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/session/2?parent=1 -d '{
-    "date" : "2014-01-01T00:00:00",
+    "event.date" : "2014-01-01T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "US",
     "gender" : "Female",
@@ -95,7 +95,7 @@ curl -XPUT localhost:9200/rubbercube/session/2?parent=1 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/session/3?parent=1 -d '{
-    "date" : "2014-01-02T00:00:00",
+    "event.date" : "2014-01-02T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "US",
     "gender" : "Female",
@@ -103,7 +103,7 @@ curl -XPUT localhost:9200/rubbercube/session/3?parent=1 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/session/4?parent=1 -d '{
-    "date" : "2014-01-03T00:00:00",
+    "event.date" : "2014-01-03T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "US",
     "gender" : "Female",
@@ -111,7 +111,7 @@ curl -XPUT localhost:9200/rubbercube/session/4?parent=1 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/session/5?parent=2 -d '{
-    "date" : "2014-01-01T00:00:00",
+    "event.date" : "2014-01-01T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "GB",
     "gender" : "Male",
@@ -119,7 +119,7 @@ curl -XPUT localhost:9200/rubbercube/session/5?parent=2 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/session/6?parent=2 -d '{
-    "date" : "2014-01-02T00:00:00",
+    "event.date" : "2014-01-02T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "GB",
     "gender" : "Male",
@@ -127,7 +127,7 @@ curl -XPUT localhost:9200/rubbercube/session/6?parent=2 -d '{
 }'
 
 curl -XPUT localhost:9200/rubbercube/session/7?parent=2 -d '{
-    "date" : "2014-01-03T00:00:00",
+    "event.date" : "2014-01-03T00:00:00",
     "registration_date" : "2014-01-01T00:00:00",
     "country" : "GB",
     "gender" : "Male",

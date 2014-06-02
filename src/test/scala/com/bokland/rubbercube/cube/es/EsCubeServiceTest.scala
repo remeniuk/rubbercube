@@ -1,7 +1,7 @@
 package com.bokland.rubbercube.cube.es
 
 import org.scalatest._
-import com.bokland.rubbercube.sliceanddice.es.EsExecutionEngine
+import com.bokland.rubbercube.sliceanddice.es.{EsRequest, EsExecutionEngine}
 import org.elasticsearch.common.settings.ImmutableSettings
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
@@ -15,7 +15,7 @@ import com.bokland.rubbercube.sliceanddice.ExecutionEngine
  */
 class EsCubeServiceTest extends WordSpec with ShouldMatchers with BeforeAndAfterAll {
 
-  var service: CubeService[SearchRequestBuilder] = _
+  var service: CubeService[EsRequest] = _
 
   override protected def beforeAll = {
     val settings = ImmutableSettings.settingsBuilder()
@@ -25,8 +25,8 @@ class EsCubeServiceTest extends WordSpec with ShouldMatchers with BeforeAndAfter
     val client = new TransportClient(settings)
       .addTransportAddress(new InetSocketTransportAddress("localhost", 9300))
 
-    service = new CubeService[SearchRequestBuilder] {
-      val executionEngine: ExecutionEngine[SearchRequestBuilder] =
+    service = new CubeService[EsRequest] {
+      val executionEngine: ExecutionEngine[EsRequest] =
         new EsExecutionEngine(client, "rubbercube")
     }
   }

@@ -18,39 +18,33 @@ import com.bokland.rubbercube.DateAggregationType
  * Created by remeniuk on 4/29/14.
  */
 
-object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggregationBuilder] {
+object EsAggregationQueryBuilder extends AggregationQueryBuilder[(AbstractAggregationBuilder, Map[String, String])] {
 
-  def buildAggregationQuery(measure: Measure) = {
-    measure match {
-      case CountDistinct(userDimension, alias) =>
-        cardinality(alias.getOrElse(measure.name)).field(userDimension.fieldName)
+  def buildAggregationQuery(measure: Measure, aggregationToFieldName: Map[String, String]) = {
+    val aggregationName = measure.alias.getOrElse(measure.name)
 
-      case Count(userDimension, alias) =>
-        count(alias.getOrElse(measure.name)).field(userDimension.fieldName)
-
-      case Sum(userDimension, alias) =>
-        sum(alias.getOrElse(measure.name)).field(userDimension.fieldName)
-
-      case Avg(userDimension, alias) =>
-        avg(alias.getOrElse(measure.name)).field(userDimension.fieldName)
-
-      case Max(userDimension, alias) =>
-        max(alias.getOrElse(measure.name)).field(userDimension.fieldName)
-
-      case Min(userDimension, alias) =>
-        min(alias.getOrElse(measure.name)).field(userDimension.fieldName)
-
-      case Categories(userDimension, alias) =>
-        terms(alias.getOrElse(measure.name)).field(userDimension.fieldName)
-    }
+    (measure match {
+      case CountDistinct(userDimension, alias) => cardinality(aggregationName).field(userDimension.fieldName)
+      case Count(userDimension, alias) => count(aggregationName).field(userDimension.fieldName)
+      case Sum(userDimension, alias) => sum(aggregationName).field(userDimension.fieldName)
+      case Avg(userDimension, alias) => avg(aggregationName).field(userDimension.fieldName)
+      case Max(userDimension, alias) => max(aggregationName).field(userDimension.fieldName)
+      case Min(userDimension, alias) => min(aggregationName).field(userDimension.fieldName)
+      case Categories(userDimension, alias) => terms(aggregationName).field(userDimension.fieldName)
+    }, aggregationToFieldName/* + (aggregationName -> measure.dimension.fieldName)*/)
   }
 
-  def buildAggregationQuery(measures: Seq[Measure], aggregations: Seq[Aggregation]) = {
-    val (aggregationQuery, lowestAggregation) = buildQueryCore(aggregations)
+  def buildAggregationQuery(measures: Seq[Measure], aggregations: Seq[Aggregation], aggregationToFieldName: Map[String, String] = Map()) = {
+    val (aggregationQuery, lowestAggregation, coreMapping) = buildQueryCore(aggregations, aggregationToFieldName)
 
-    measures.foreach(measure =>
-      addSubAggregation(lowestAggregation, buildAggregationQuery(measure)))
-    aggregationQuery
+    val updatedMapping = (coreMapping /: measures){
+      (mapping, measure) =>
+        val (query, updatedMapping) = buildAggregationQuery(measure, mapping)
+        addSubAggregation(lowestAggregation, query)
+        updatedMapping
+    }
+
+    (aggregationQuery, updatedMapping)
   }
 
   ///////////////////////
@@ -64,13 +58,14 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
       case DateAggregationType.Day => DateHistogram.Interval.DAY
     }
 
-  private def buildAggregationQuery(aggregation: Aggregation): AbstractAggregationBuilder = {
+  private def buildAggregationQuery(aggregation: Aggregation, aggregationToFieldName: Map[String, String]):
+  (AbstractAggregationBuilder, Map[String, String]) = {
     val Aggregation(dimension, aggregationType) = aggregation
-    aggregationType match {
+    (aggregationType match {
       case CategoryAggregation => terms(dimension.name).field(dimension.fieldName)
       case DateAggregation(interval) => dateHistogram(dimension.name)
         .interval(interval).field(dimension.fieldName)
-    }
+    }, aggregationToFieldName + (dimension.name -> aggregation.dimension.fieldName))
   }
 
   private def addSubAggregation(superAgg: AbstractAggregationBuilder,
@@ -86,21 +81,24 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[AbstractAggrega
     }
   }
 
-  private def buildQueryCore(aggregations: Seq[Aggregation]):
-  (AbstractAggregationBuilder, AbstractAggregationBuilder) = {
-    val aggregation: AbstractAggregationBuilder = buildAggregationQuery(aggregations.head)
+  private def buildQueryCore(aggregations: Seq[Aggregation], aggregationToFieldName: Map[String, String] = Map()):
+  (AbstractAggregationBuilder, AbstractAggregationBuilder, Map[String, String]) = {
+    val (aggregation, updatedMapping) = buildAggregationQuery(aggregations.head, aggregationToFieldName)
     var subAgg: AbstractAggregationBuilder = null
+    var sumMap = Map[String, String]()
 
     if (aggregations.size > 1) (aggregation /: aggregations.tail) {
       (aggs, agg) =>
-        subAgg = buildAggregationQuery(agg)
+        val (s, m) = buildAggregationQuery(agg, sumMap)
+        subAgg = s
+        sumMap = m
         addSubAggregation(aggs, subAgg)
         subAgg
     } else {
       subAgg = aggregation
     }
 
-    (aggregation, subAgg)
+    (aggregation, subAgg, (updatedMapping ++ sumMap).toMap)
   }
 
 }

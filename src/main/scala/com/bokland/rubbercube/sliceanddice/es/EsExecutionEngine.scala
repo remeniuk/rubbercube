@@ -24,9 +24,15 @@ import org.elasticsearch.client.Client
 /**
  * Created by remeniuk on 4/29/14.
  */
-class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[SearchRequestBuilder] {
+case class EsRequest(builder: SearchRequestBuilder, aggregationToFieldName: Map[String, String] = Map()) {
 
-  def buildRequest(sliceAndDice: SliceAndDice): SearchRequestBuilder = {
+  def aggregationFieldName(aggregationName: String) = aggregationToFieldName.getOrElse(aggregationName, aggregationName)
+
+}
+
+class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[EsRequest] {
+
+  def buildRequest(sliceAndDice: SliceAndDice): EsRequest = {
     import sliceAndDice._
 
     // return no documents
@@ -41,8 +47,19 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
     }
 
     // transform measures and aggregation to ES aggregations
-    if (aggregations.isEmpty) flattenMeasures.foreach(m => search.addAggregation(buildAggregationQuery(m)))
-    else search.addAggregation(buildAggregationQuery(flattenMeasures, aggregations))
+    val aggregationsMapping = if (aggregations.isEmpty) {
+      val mapping = Map[String, String]()
+      (mapping /: flattenMeasures){
+        (m, measure) =>
+          val (query, updatedMapping) = buildAggregationQuery(measure, m)
+          search.addAggregation(query)
+          updatedMapping
+      }
+    } else {
+      val (query, mapping) = buildAggregationQuery(flattenMeasures, aggregations)
+      search.addAggregation(query)
+      mapping
+    }
 
     filter.fold({
       filters =>
@@ -75,7 +92,7 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
         search.setQuery(filteredQuery(matchAllQuery(), filter))
     })
 
-    search
+    EsRequest(search, aggregationsMapping)
   }
 
   private def parseCategoryAggregationResult(aggregation: Aggregation): (String, Any) =
@@ -92,13 +109,15 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
   private def isBucketAggregation(aggregation: Aggregation): Boolean =
     aggregation.isInstanceOf[DateHistogram] || aggregation.isInstanceOf[Terms]
 
-  def runQuery(query: SearchRequestBuilder): RequestResult = {
-    val result = query.execute().get()
+  def runQuery(request: EsRequest): RequestResult = {
+    val result = request.builder.execute().get()
 
     var resultSet: Set[Map[String, Any]] = Set()
 
     // processes bucket aggregations
     def parseResults(aggregation: Aggregation, tuple: Map[String, Any] = Map()): Any = {
+
+      val aggreagtionName = request.aggregationFieldName(aggregation.getName)
 
       aggregation match {
 
@@ -107,10 +126,10 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
             bucket =>
               // if child aggregation is bucket aggregation, drill down
               if (!bucket.getAggregations.isEmpty && bucket.getAggregations.forall(isBucketAggregation)) {
-                bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKey)))
+                bucket.getAggregations.foreach(parseResults(_, tuple + (aggreagtionName -> bucket.getKey)))
               } else {
                 // if child aggregation is category aggregation, build tuple and add it to result
-                resultSet = resultSet + ((tuple + (aggregation.getName -> bucket.getKey)) ++
+                resultSet = resultSet + ((tuple + (aggreagtionName -> bucket.getKey)) ++
                   bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
               }
           }
@@ -121,10 +140,10 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
             bucket =>
               // if child aggregation is bucket aggregation, drill down
               if (bucket.getAggregations.forall(isBucketAggregation)) {
-                bucket.getAggregations.foreach(parseResults(_, tuple + (aggregation.getName -> bucket.getKeyAsNumber)))
+                bucket.getAggregations.foreach(parseResults(_, tuple + (aggreagtionName -> bucket.getKeyAsNumber)))
               } else {
                 // if child aggregation is category aggregation, build tuple and add it to result
-                resultSet = resultSet + ((tuple + (aggregation.getName -> bucket.getKeyAsNumber)) ++
+                resultSet = resultSet + ((tuple + (aggreagtionName -> bucket.getKeyAsNumber)) ++
                   bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
               }
           }
@@ -146,7 +165,7 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
         // may only happen, if category aggregations are upper level, and there're no
         // bucket aggregations
         Seq(result.getAggregations.map(parseCategoryAggregationResult).toMap)
-      }, query.request().types().headOption
+      }, request.builder.request().types().headOption
     )
   }
 
@@ -156,12 +175,12 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[S
         leftTuple =>
 
           val columnsToJoinBy = by.flatMap(_.dimensions.find(_.cubeId == resultSets.head.cubeId))
-          val valuesToJoinBy = leftTuple.filterKeys(columnsToJoinBy.map(_.name).contains)
+          val valuesToJoinBy = leftTuple.filterKeys(columnsToJoinBy.map(_.fieldName).contains)
 
           val rightTuples = resultSets.tail.toList.flatMap {
             rightResultSet =>
               val joinColumnMapping = by.flatMap(mapping => mapping.dimensions.find(_.cubeId == rightResultSet.cubeId)
-                .map(_.name -> mapping.dimensions.head.name)).toMap
+                .map(_.fieldName -> mapping.dimensions.head.fieldName)).toMap
               rightResultSet.find(valuesToJoinBy).map(_.map(t => if (joinColumnMapping.contains(t._1))
                 joinColumnMapping(t._1) -> t._2
               else t))
