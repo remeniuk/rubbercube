@@ -63,6 +63,8 @@ object EsAggregationQueryBuilder extends AggregationQueryBuilder[(AbstractAggreg
     val Aggregation(dimension, aggregationType) = aggregation
     (aggregationType match {
       case CategoryAggregation => terms(dimension.name).field(dimension.fieldName)
+      case NumberAggregation(interval) => histogram(dimension.name)
+        .interval(interval).field(dimension.fieldName)
       case DateAggregation(interval) => dateHistogram(dimension.name)
         .interval(interval).field(dimension.fieldName)
     }, aggregationToFieldName + (dimension.name -> aggregation.dimension.fieldName))

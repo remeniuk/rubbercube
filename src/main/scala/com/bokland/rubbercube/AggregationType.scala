@@ -25,3 +25,5 @@ object DateAggregationType extends Enumeration {
 }
 
 case class DateAggregation(aggregationType: DateAggregationType) extends AggregationType
+
+case class NumberAggregation(interval: Int) extends AggregationType

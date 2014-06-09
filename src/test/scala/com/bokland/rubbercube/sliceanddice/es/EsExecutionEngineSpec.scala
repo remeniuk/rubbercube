@@ -206,4 +206,16 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     result.resultSet.head.get("country") should be(None)
   }
 
+  "Purchases should be aggregated by interval" in {
+    val sliceAndDice = SliceAndDice("purchase",
+      Seq(Dimension("amount") -> NumberAggregation(50)),
+      Seq(CountDistinct(Dimension("_parent"))))
+
+    val result = engine.execute(sliceAndDice)
+    result should be(
+      RequestResult(List(Map("amount" -> 0, "countdistinct-_parent" -> 2),
+        Map("amount" -> 50, "countdistinct-_parent" -> 1)), Some("purchase"))
+    )
+  }
+
 }

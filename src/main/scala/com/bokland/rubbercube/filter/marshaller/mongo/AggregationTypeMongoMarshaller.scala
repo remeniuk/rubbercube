@@ -17,12 +17,15 @@ object AggregationTypeMongoMarshaller extends MongoMarshaller[AggregationType] {
         MongoDBObject("type" -> AggregationType.Category)
       case DateAggregation(dateType) =>
         MongoDBObject("type" -> AggregationType.Date, "date_type" -> dateType.toString)
+      case NumberAggregation(interval) =>
+        MongoDBObject("type" -> AggregationType.Number, "interval" -> interval)
     }
 
   def unmarshal(obj: Imports.DBObject): AggregationType =
     obj.as[String]("type") match {
       case AggregationType.Category => CategoryAggregation
       case AggregationType.Date => DateAggregation(DateAggregationType.withName(obj.as[String]("date_type")))
+      case AggregationType.Number => NumberAggregation(obj.as[Int]("interval"))
     }
 
 }

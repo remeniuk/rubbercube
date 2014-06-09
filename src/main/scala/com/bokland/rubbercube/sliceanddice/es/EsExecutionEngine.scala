@@ -5,6 +5,7 @@ import com.bokland.rubbercube.sliceanddice.{Mapping, RequestResult, SliceAndDice
 import com.bokland.rubbercube.marshaller.es.EsFilterMarshaller
 import com.bokland.rubbercube.measure.es.EsAggregationQueryBuilder
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogram
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram
 import scala.collection.JavaConversions._
 import org.elasticsearch.search.aggregations.Aggregation
 import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality
@@ -134,6 +135,20 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[E
               } else {
                 // if child aggregation is category aggregation, build tuple and add it to result
                 resultSet = resultSet + ((tuple + (aggreagtionName -> bucket.getKey)) ++
+                  bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
+              }
+          }
+
+        case histogram: Histogram =>
+
+          histogram.getBuckets.foreach {
+            bucket =>
+              // if child aggregation is bucket aggregation, drill down
+              if (bucket.getAggregations.forall(isBucketAggregation)) {
+                bucket.getAggregations.foreach(parseResults(_, tuple + (aggreagtionName -> bucket.getKeyAsNumber)))
+              } else {
+                // if child aggregation is category aggregation, build tuple and add it to result
+                resultSet = resultSet + ((tuple + (aggreagtionName -> bucket.getKeyAsNumber)) ++
                   bucket.getAggregations.map(parseCategoryAggregationResult).toMap)
               }
           }
