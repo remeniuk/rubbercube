@@ -92,6 +92,10 @@ class EsExecutionEngine(client: Client, index: String) extends ExecutionEngine[E
         search.setQuery(filteredQuery(matchAllQuery(), filter))
     })
 
+    if(!sliceAndDice.excludeFields.isEmpty){
+      search.setFetchSource(Array("*"), sliceAndDice.excludeFields.toArray)
+    }
+
     EsRequest(search, aggregationsMapping)
   }
 

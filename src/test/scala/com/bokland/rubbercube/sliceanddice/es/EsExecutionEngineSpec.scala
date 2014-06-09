@@ -197,4 +197,13 @@ class EsExecutionEngineSpec extends WordSpec with ShouldMatchers with BeforeAndA
     result.resultSet.size should be(5)
   }
 
+  "List of fields can be excluded from resulting document[s]" in {
+    val purchases = SliceAndDice("purchase", size = 10, from = 0, excludeFields = Seq("country"))
+
+    println(engine.buildRequest(purchases))
+
+    val result = engine.execute(purchases)
+    result.resultSet.head.get("country") should be(None)
+  }
+
 }
