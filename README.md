@@ -1,7 +1,7 @@
 rubbercube
 ==========
 
-Library for OLAP over ElasticSearch. Provides efficient aggreagation and analysis over hige fact tables at a real-time. 
+Library for OLAP over ElasticSearch. Provides efficient aggreagation and analysis over huge fact tables at a real-time. 
 
     resolvers += "rubbercube" at "https://bokland.github.io/rubbercube"
 
