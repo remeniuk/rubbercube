@@ -154,3 +154,11 @@ Filters are the special case, as their structure highly depends on filter type, 
     "dimension": Dimension
 }
 ```
+
+###Contributors
+
+Oleg Oleshko / https://github.com/OlegYch
+
+Siarzhuk Miadzvedzeu / https://github.com/siarzh
+
+Konstantin Stepanov / https://github.com/kstep 
